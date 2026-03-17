@@ -66,5 +66,8 @@ tmp/
 data/raw/
 data/processed/
 
+# Documents and attachments
+*.pdf
+
 # OS trash
 .Trashes
