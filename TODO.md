@@ -2,78 +2,78 @@
 
 ## 1. Ortam ve Kurulumlar (Mac + Homebrew)
 
-- [ ] Xcode Command Line Tools kur:
+- [x] Xcode Command Line Tools kur:
   - Komut: xcode-select --install
-- [ ] Homebrew güncelle:
+- [x] Homebrew güncelle:
   - Komut: brew update
 
 ### 1.1 MongoDB Kurulumu ve Çalıştırma
 
-- [ ] MongoDB tap ekle:
+- [x] MongoDB tap ekle:
   - Komut: brew tap mongodb/brew
-- [ ] MongoDB Community sürümünü kur:
+- [x] MongoDB Community sürümünü kur:
   - Komut: brew install mongodb-community@8.0
-- [ ] MongoDB servisini başlat:
+- [x] MongoDB servisini başlat:
   - Komut: brew services start mongodb-community@8.0
-- [ ] MongoDB durumunu kontrol et:
+- [x] MongoDB durumunu kontrol et:
   - Komut: brew services list
-- [ ] Mongosh kur (gerekliyse):
+- [x] Mongosh kur (gerekliyse):
   - Komut: brew install mongosh
-- [ ] Ping testi yap:
+- [x] Ping testi yap:
   - Komut: mongosh --eval "db.runCommand({ ping: 1 })"
-- [ ] Gerekirse durdur/yeniden başlat:
+- [x] Gerekirse durdur/yeniden başlat:
   - Komut: brew services stop mongodb-community@8.0
   - Komut: brew services restart mongodb-community@8.0
 
 ### 1.2 Node.js Kurulumu
 
-- [ ] Node.js LTS kur:
+- [x] Node.js LTS kur:
   - Komut: brew install node
-- [ ] Sürümleri doğrula:
+- [x] Sürümleri doğrula:
   - Komut: node -v
   - Komut: npm -v
 
 ### 1.3 Python ve venv Kurulumu
 
-- [ ] Python sürümünü doğrula:
+- [x] Python sürümünü doğrula:
   - Komut: python3 --version
-- [ ] Ana dizinde sanal ortam oluştur:
+- [x] Ana dizinde sanal ortam oluştur:
   - Komut: python3 -m venv .venv
-- [ ] Sanal ortamı aktive et:
+- [x] Sanal ortamı aktive et:
   - Komut: source .venv/bin/activate
-- [ ] Pip araçlarını güncelle:
+- [x] Pip araçlarını güncelle:
   - Komut: python -m pip install --upgrade pip setuptools wheel
 
 ### 1.4 Backend Kütüphaneleri Kurulumu
 
-- [ ] API ve DB paketlerini kur:
+- [x] API ve DB paketlerini kur:
   - Komut: pip install fastapi uvicorn pymongo motor pydantic pydantic-settings python-dotenv
-- [ ] Scraping paketlerini kur:
+- [x] Scraping paketlerini kur:
   - Komut: pip install scrapy beautifulsoup4 lxml newspaper3k requests httpx
-- [ ] NLP/Embedding paketlerini kur:
+- [x] NLP/Embedding paketlerini kur:
   - Komut: pip install sentence-transformers scikit-learn numpy scipy pandas rapidfuzz
-- [ ] Konum/geocoding yardımcı paketlerini kur:
+- [x] Konum/geocoding yardımcı paketlerini kur:
   - Komut: pip install googlemaps tenacity
-- [ ] Yardımcı kalite paketlerini kur:
+- [x] Yardımcı kalite paketlerini kur:
   - Komut: pip install loguru python-dateutil
-- [ ] Test/lint/format paketlerini kur:
+- [x] Test/lint/format paketlerini kur:
   - Komut: pip install pytest pytest-asyncio pytest-cov black ruff mypy pre-commit
 
 ### 1.5 Frontend Kurulumu
 
-- [ ] Vite + React + TypeScript projesi oluştur:
+- [x] Vite + React + TypeScript projesi oluştur:
   - Komut: npm create vite@latest frontend -- --template react-ts
-- [ ] Frontend bağımlılıklarını kur:
+- [x] Frontend bağımlılıklarını kur:
   - Komut: cd frontend && npm install
-- [ ] API/State/Map paketlerini kur:
+- [x] API/State/Map paketlerini kur:
   - Komut: npm install axios @tanstack/react-query @react-google-maps/api zod dayjs react-router-dom
-- [ ] Test ve kalite paketlerini kur:
+- [x] Test ve kalite paketlerini kur:
   - Komut: npm install -D vitest @testing-library/react @testing-library/jest-dom eslint prettier eslint-config-prettier
 
 ### 1.6 Kurulum Kayıt Disiplini
 
-- [ ] Ana dizinde install_log.md dosyasını oluştur.
-- [ ] Her kurulumdan sonra şu bilgileri işle:
+- [x] Ana dizinde install_log.md dosyasını oluştur.
+- [x] Her kurulumdan sonra şu bilgileri işle:
   - Tarih
   - Kurulan paket/uygulama
   - Sürüm
@@ -114,12 +114,12 @@
 
 ## 4. Web Scraping Katmanı
 
-- [ ] Hedef haber sitelerini ve selector stratejilerini dokümante et.
-- [ ] Scrapy spider dosyalarını oluştur.
-- [ ] Her kaynak için parser yaz (başlık, tarih, içerik, tür, URL).
-- [ ] Retry, timeout ve user-agent rotasyonu ekle.
-- [ ] Duplicate URL kontrolü ekle.
-- [ ] Scrape çıktısını ham ve işlenmiş olarak logla.
+- [x] Hedef haber sitelerini ve selector stratejilerini dokümante et.
+- [x] Scrapy spider dosyalarını oluştur.
+- [x] Her kaynak için parser yaz (başlık, tarih, içerik, tür, URL).
+- [x] Retry, timeout ve user-agent rotasyonu ekle.
+- [x] Duplicate URL kontrolü ekle.
+- [x] Scrape çıktısını ham ve işlenmiş olarak logla.
 - [ ] İlk örnek veri setini MongoDB news koleksiyonuna yaz.
 
 ## 5. NLP ve Embedding Tabanlı Tekilleştirme
