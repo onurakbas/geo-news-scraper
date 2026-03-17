@@ -10,12 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
-from app.db.client import connect_db, disconnect_db
+from app.db.client import connect_db, disconnect_db, get_database
+from app.db.indexes import create_all_indexes
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_db()
+    await create_all_indexes(get_database())
     yield
     await disconnect_db()
 

@@ -97,20 +97,20 @@
 
 ## 3. MongoDB Tasarımı ve İndeksler
 
-- [ ] Koleksiyonları tanımla:
+- [x] Koleksiyonları tanımla:
   - news
   - sources
   - geocode_cache
   - ingest_logs
-- [ ] news doküman şemasını netleştir:
+- [x] news doküman şemasını netleştir:
   - source, url, title, content, published_at, type, district, city, locations, coordinates, embedding, similarity_group_id, created_at, updated_at
-- [ ] Temel indeksleri oluştur:
+- [x] Temel indeksleri oluştur:
   - url unique index
   - published_at index
   - type index
   - district index
   - coordinates 2dsphere index
-- [ ] Geocode cache için unique address index ekle.
+- [x] Geocode cache için unique address index ekle.
 
 ## 4. Web Scraping Katmanı
 
