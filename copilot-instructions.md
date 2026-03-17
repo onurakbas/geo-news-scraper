@@ -98,3 +98,8 @@ Bu proje, belirli haber sitelerinden şehir/kent odaklı haberleri toplar, embed
 - Gereksiz bağımlılık ekleme.
 - Büyük değişikliklerde önce kısa plan çıkar, sonra uygula.
 - Her önemli değişiklikte hangi gereksinimi karşıladığını belirt.
+
+## 13) Git Workflow ve Otomasyon
+
+- Her önemli TODO maddesi tamamlandığında veya mantıksal bir iş paketi bittiğinde, doğrudan bir sonraki işe geçme. Önce dur ve kullanıcıya şu soruyu sor: "Bu aşamayı commit'leyip push'lamak ister misin? Önerdiğim İngilizce commit mesajı: [type: message]". Kullanıcı onay verirse terminalde git add ., git commit -m "..." ve git push komutlarını çalıştır.
+- ÖNEMLİ: Yeni bir dosya, klasör, log veya veri tipi (cache, raw data vb.) oluşturduğunda, commit aşamasına geçmeden önce daima `.gitignore` dosyasını kontrol et ve bu gereksiz/büyük dosyaların Git tarafından takip edilmediğinden emin olacak şekilde `.gitignore` dosyasını güncelle.

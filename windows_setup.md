@@ -66,6 +66,7 @@ https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-windows/
    - Komut: source .venv/Scripts/activate
 
 Not: PowerShell script execution policy hatasi alirsan (gecici cozum):
+
 - Komut: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - Sonra tekrar: .\\.venv\\Scripts\\Activate.ps1
 
@@ -111,6 +112,7 @@ Sanal ortam aktifken:
 ## 10) Kurulum Kaydi
 
 Her kurulum adimindan sonra ana dizindeki install_log.md dosyasina su bilgileri yaz:
+
 - Tarih
 - Kurulan paket/uygulama
 - Surum

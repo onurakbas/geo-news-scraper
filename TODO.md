@@ -83,17 +83,17 @@
 
 ## 2. Proje İskeleti ve Konfigürasyon
 
-- [ ] Dizin yapısını planlanan ağaçla oluştur.
-- [ ] .gitignore dosyasını doldur (.venv, node_modules, .env, data/raw vb. hariç tut).
-- [ ] .env.example dosyasını hazırla:
+- [x] Dizin yapısını planlanan ağaçla oluştur.
+- [x] .gitignore dosyasını doldur (.venv, node_modules, .env, data/raw vb. hariç tut).
+- [x] .env.example dosyasını hazırla:
   - MONGODB_URI
   - MONGODB_DB_NAME
   - GOOGLE_GEOCODING_API_KEY
   - GOOGLE_MAPS_JS_API_KEY
   - SCRAPE_SCHEDULE_CRON
-- [ ] Backend için temel FastAPI uygulamasını ayağa kaldır.
-- [ ] Frontend için temel Vite uygulamasını ayağa kaldır.
-- [ ] Health endpoint hazırla (/health).
+- [x] Backend için temel FastAPI uygulamasını ayağa kaldır.
+- [x] Frontend için temel Vite uygulamasını ayağa kaldır.
+- [x] Health endpoint hazırla (/health).
 
 ## 3. MongoDB Tasarımı ve İndeksler
 
