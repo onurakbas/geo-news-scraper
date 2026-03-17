@@ -120,20 +120,20 @@
 - [x] Retry, timeout ve user-agent rotasyonu ekle.
 - [x] Duplicate URL kontrolü ekle.
 - [x] Scrape çıktısını ham ve işlenmiş olarak logla.
-- [ ] İlk örnek veri setini MongoDB news koleksiyonuna yaz.
+- [x] İlk örnek veri setini MongoDB news koleksiyonuna yaz.
 
 ## 5. NLP ve Embedding Tabanlı Tekilleştirme
 
-- [ ] Metin temizleme pipeline’ı oluştur (HTML temizleme, normalizasyon).
-- [ ] Embedding modeli seç ve sabitle.
-- [ ] Her haber için embedding üret.
-- [ ] Aday eşleşmeleri filtrele:
+- [x] Metin temizleme pipeline'ı oluştur (HTML temizleme, normalizasyon).
+- [x] Embedding modeli seç ve sabitle.
+- [x] Her haber için embedding üret.
+- [x] Aday eşleşmeleri filtrele:
   - aynı gün aralığı
   - benzer başlık ipuçları
-- [ ] Cosine similarity hesapla.
-- [ ] Eşik kuralını uygula:
+- [x] Cosine similarity hesapla.
+- [x] Eşik kuralını uygula:
   - similarity >= 0.90 ise tekilleştir
-- [ ] Tekilleştirme kararını veri modelinde sakla (similarity_group_id).
+- [x] Tekilleştirme kararını veri modelinde sakla (similarity_group_id).
 - [ ] Eşiği doğrulamak için manuel örnekleme raporu hazırla.
 
 ## 6. Konum Çıkarımı ve Geocoding

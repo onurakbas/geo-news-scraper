@@ -101,5 +101,17 @@ Bu proje, belirli haber sitelerinden şehir/kent odaklı haberleri toplar, embed
 
 ## 13) Git Workflow ve Otomasyon
 
-- Her önemli TODO maddesi tamamlandığında veya mantıksal bir iş paketi bittiğinde, doğrudan bir sonraki işe geçme. Önce dur ve kullanıcıya şu soruyu sor: "Bu aşamayı commit'leyip push'lamak ister misin? Önerdiğim İngilizce commit mesajı: [type: message]". Kullanıcı onay verirse terminalde git add ., git commit -m "..." ve git push komutlarını çalıştır.
+- Her önemli TODO maddesi tamamlandığında veya mantıksal bir iş paketi bittiğinde, doğrudan bir sonraki işe geçme. Önce dur ve kullanıcıya commit onayı sor.
+- Commit mesajları daima bir başlık ve altında neler yapıldığını madde madde anlatan detaylı bir body içermelidir. **Commit mesajının TAMAMI (başlık ve tüm body maddeleri) KESİNLİKLE İNGİLİZCE olmalıdır. Türkçe veya başka bir dil kesinlikle kabul edilemez.** Format:
+
+  ```
+  type(scope): Short title in English (max 72 chars)
+
+  - Change description 1 (in English)
+  - Change description 2 (in English)
+  - Change description 3 (in English)
+  ```
+
+  Kullanıcı onay verirse terminalde `git add .`, `git commit -m "title" -m "body"` ve `git push` komutlarını çalıştır.
+
 - ÖNEMLİ: Yeni bir dosya, klasör, log veya veri tipi (cache, raw data vb.) oluşturduğunda, commit aşamasına geçmeden önce daima `.gitignore` dosyasını kontrol et ve bu gereksiz/büyük dosyaların Git tarafından takip edilmediğinden emin olacak şekilde `.gitignore` dosyasını güncelle.

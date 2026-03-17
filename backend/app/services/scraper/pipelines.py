@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pymongo
+from pymongo import errors as pymongo_errors
 from loguru import logger
 from scrapy import Spider
 from scrapy.exceptions import DropItem
@@ -154,7 +155,7 @@ class MongoNewsPipeline:
                 logger.debug(
                     f"[{spider.name}] Skipped duplicate: {doc['url']}"
                 )
-        except pymongo.errors.PyMongoError as exc:
+        except pymongo_errors.PyMongoError as exc:
             logger.error(
                 f"[{spider.name}] MongoDB error for {doc['url']}: {exc}"
             )
