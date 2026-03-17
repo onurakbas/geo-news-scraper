@@ -134,16 +134,16 @@
 - [x] Eşik kuralını uygula:
   - similarity >= 0.90 ise tekilleştir
 - [x] Tekilleştirme kararını veri modelinde sakla (similarity_group_id).
-- [ ] Eşiği doğrulamak için manuel örnekleme raporu hazırla.
+- [x] Eşiği doğrulamak için manuel örnekleme raporu hazırla.
 
 ## 6. Konum Çıkarımı ve Geocoding
 
-- [ ] Haber metninden konum çıkarımı stratejisini belirle (NER + sözlük yaklaşımı).
-- [ ] Çıkarılan konumları normalize et (il/ilçe adları).
-- [ ] Google Geocoding API istemcisini yaz.
-- [ ] Rate limit ve retry mekanizması ekle.
-- [ ] Geocode cache kullan (aynı adresi tekrar çağırma).
-- [ ] Başarılı koordinatları news dokümanına yaz.
+- [x] Haber metninden konum çıkarımı stratejisini belirle (NER + sözlük yaklaşımı).
+- [x] Çıkarılan konumları normalize et (il/ilçe adları).
+- [x] Google Geocoding API istemcisini yaz.
+- [x] Rate limit ve retry mekanizması ekle.
+- [x] Geocode cache kullan (aynı adresi tekrar çağırma).
+- [x] Başarılı koordinatları news dokümanına yaz.
 
 ## 7. Backend API Endpoint’leri
 
