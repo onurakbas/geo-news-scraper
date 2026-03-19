@@ -150,16 +150,16 @@
 
 ## 7. Backend API Endpoint’leri
 
-- [ ] GET /api/v1/news endpoint:
+- [x] GET /api/v1/news endpoint:
   - filtre: date_from, date_to, type, district, page, page_size
-- [ ] GET /api/v1/filters endpoint:
+- [x] GET /api/v1/filters endpoint:
   - mevcut türler ve ilçeler
-- [ ] GET /api/v1/news/{id} detay endpoint
-- [ ] GET /api/v1/map/markers endpoint (harita için optimize veri)
-- [ ] Pydantic doğrulama ve hata mesajları ekle.
-- [ ] OpenAPI dokümantasyonunu gözden geçir.
-- [ ] Endpoint performansını test et.
-- [ ] Tekilleştirilmiş (aynı similarity_group_id'ye sahip) haberler için, API yanıtında (response) tüm kaynakları (`sources` array) birleştirerek dön.
+- [x] GET /api/v1/news/{id} detay endpoint
+- [x] GET /api/v1/map/markers endpoint (harita için optimize veri)
+- [x] Pydantic doğrulama ve hata mesajları ekle.
+- [x] OpenAPI dokümantasyonunu gözden geçir.
+- [x] Endpoint performansını test et.
+- [x] Tekilleştirilmiş (aynı similarity_group_id'ye sahip) haberler için, API yanıtında (response) tüm kaynakları (`sources` array) birleştirerek dön.
 
 ## 8. React Harita ve Dinamik Filtreleme
 
