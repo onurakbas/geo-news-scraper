@@ -121,6 +121,7 @@
 - [x] Duplicate URL kontrolü ekle.
 - [x] Scrape çıktısını ham ve işlenmiş olarak logla.
 - [x] İlk örnek veri setini MongoDB news koleksiyonuna yaz.
+- [ ] Örümceklere (spider) tarih filtresi mantığı ekle: Sadece son 3 günün (72 saat) haberleri çekilecek.
 
 ## 5. NLP ve Embedding Tabanlı Tekilleştirme
 
@@ -135,6 +136,8 @@
   - similarity >= 0.90 ise tekilleştir
 - [x] Tekilleştirme kararını veri modelinde sakla (similarity_group_id).
 - [x] Eşiği doğrulamak için manuel örnekleme raporu hazırla.
+- [ ] Haber metinlerini analiz ederek 5 zorunlu türe (Trafik Kazası, Yangın, Elektrik Kesintisi, Hırsızlık, Kültürel Etkinlikler) göre anahtar kelime tabanlı sınıflandır.
+- [ ] Bir haber birden fazla kategoriye giriyorsa, öncelik sırası kurallarını uygula (Örn: Yangın > Kaza).
 
 ## 6. Konum Çıkarımı ve Geocoding
 
@@ -156,6 +159,7 @@
 - [ ] Pydantic doğrulama ve hata mesajları ekle.
 - [ ] OpenAPI dokümantasyonunu gözden geçir.
 - [ ] Endpoint performansını test et.
+- [ ] Tekilleştirilmiş (aynı similarity_group_id'ye sahip) haberler için, API yanıtında (response) tüm kaynakları (`sources` array) birleştirerek dön.
 
 ## 8. React Harita ve Dinamik Filtreleme
 
@@ -170,6 +174,10 @@
 - [ ] URL query param senkronizasyonu ekle.
 - [ ] Filtre değişimlerinde liste + haritayı eşzamanlı güncelle.
 - [ ] Marker cluster ekleyerek yoğun veri performansını iyileştir.
+- [ ] Haritanın başlangıç merkezini (center) Kocaeli merkez koordinatları olarak ayarla.
+- [ ] 5 farklı haber türü için 5 farklı renkte/sembolde marker ikonu tanımla.
+- [ ] Marker'a tıklandığında açılan popup içeriğine şunları ekle: Başlık, Tarih, Tüm Kaynak Adları.
+- [ ] Popup içerisine "Habere Git" butonu ekle; tıklanınca kaynak siteyi yeni sekmede (`target="_blank"`) aç.
 
 ## 9. Test ve Kalite
 
@@ -203,3 +211,4 @@
   - tüm gereksinimler karşılandı mı
   - tekrar üretilebilir kurulum var mı
   - install_log.md güncel mi
+- [ ] Proje raporunu IEEE formatında ve en az 4 sayfa olacak şekilde **sadece LaTeX kullanarak** tasarla (Teslimde LaTeX kodları/eklentileri de verilecek).

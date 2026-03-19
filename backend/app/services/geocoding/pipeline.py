@@ -54,7 +54,7 @@ def run_geocoding(
         query: dict[str, Any] = {}
         logger.info("[geocode-pipeline] Full re-run: processing ALL documents.")
     else:
-        query = {"coordinates": {"$exists": False}}
+        query = {"$or": [{"coordinates": {"$exists": False}}, {"coordinates": None}]}
         logger.info("[geocode-pipeline] Incremental run: processing docs without coordinates.")
 
     total = news_col.count_documents(query)

@@ -42,6 +42,7 @@ DOWNLOAD_TIMEOUT = 20
 # ── Pipelines ───────────────────────────────────────────────────────────────
 ITEM_PIPELINES = {
     "app.services.scraper.pipelines.ValidationPipeline": 100,
+    "app.services.scraper.pipelines.DateFilterPipeline": 150,
     "app.services.scraper.pipelines.RawHtmlPipeline": 200,
     "app.services.scraper.pipelines.MongoNewsPipeline": 300,
 }

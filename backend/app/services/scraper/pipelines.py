@@ -3,14 +3,15 @@ Scrapy Item Pipelines for Geo News Scraper.
 
 Pipeline execution order (defined in settings.py):
   1. ValidationPipeline  (priority 100) – drop items missing required fields.
-  2. RawHtmlPipeline     (priority 200) – save raw HTML bytes to data/raw/.
-  3. MongoNewsPipeline   (priority 300) – insert into MongoDB; skip URL duplicates.
+  2. DateFilterPipeline  (priority 150) – drop articles older than 72 hours.
+  3. RawHtmlPipeline     (priority 200) – save raw HTML bytes to data/raw/.
+  4. MongoNewsPipeline   (priority 300) – classify, then insert into MongoDB.
 """
 
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -21,6 +22,7 @@ from scrapy import Spider
 from scrapy.exceptions import DropItem
 
 from app.services.scraper.items import NewsItem
+from app.services.nlp.classifier import classify_news
 
 if TYPE_CHECKING:
     pass
@@ -40,6 +42,37 @@ class ValidationPipeline:
                 raise DropItem(
                     f"[{spider.name}] Missing required field '{field}' – url={item.get('url')}"
                 )
+        return item
+
+
+# ── 2. Date Filter ───────────────────────────────────────────────────────────
+
+class DateFilterPipeline:
+    """
+    Drop articles published more than 72 hours ago.
+
+    Articles with no published_at date are allowed through so we don't
+    silently discard content whose timestamp could not be parsed.
+    """
+
+    MAX_AGE: timedelta = timedelta(hours=72)
+
+    def process_item(self, item: NewsItem, spider: Spider) -> NewsItem:
+        published_at: datetime | None = item.get("published_at")
+        if published_at is None:
+            # Cannot determine age – let it through
+            return item
+
+        # Make timezone-aware for safe comparison
+        if published_at.tzinfo is None:
+            published_at = published_at.replace(tzinfo=timezone.utc)
+
+        age = datetime.now(tz=timezone.utc) - published_at
+        if age > self.MAX_AGE:
+            raise DropItem(
+                f"[{spider.name}] Article too old ({age.days}d {age.seconds//3600}h) – "
+                f"url={item.get('url')}"
+            )
         return item
 
 
@@ -121,13 +154,19 @@ class MongoNewsPipeline:
     def process_item(self, item: NewsItem, spider: Spider) -> NewsItem:
         now = datetime.now(tz=timezone.utc)
 
+        # Classify article into one of the 5 mandatory categories
+        news_type = classify_news(
+            title=item.get("title", ""),
+            content=item.get("content", ""),
+        )
+
         doc: dict = {
             "source": item.get("source"),
             "url": item.get("url"),
             "title": item.get("title"),
             "content": item.get("content", ""),
             "published_at": item.get("published_at"),
-            "type": item.get("type", "genel"),
+            "type": news_type,
             "district": item.get("district"),
             "city": item.get("city", "Kocaeli"),
             # Enrichment fields – populated by later pipeline stages (NLP, geocoding)
