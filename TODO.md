@@ -121,7 +121,7 @@
 - [x] Duplicate URL kontrolü ekle.
 - [x] Scrape çıktısını ham ve işlenmiş olarak logla.
 - [x] İlk örnek veri setini MongoDB news koleksiyonuna yaz.
-- [ ] Örümceklere (spider) tarih filtresi mantığı ekle: Sadece son 3 günün (72 saat) haberleri çekilecek.
+- [x] Örümceklere (spider) tarih filtresi mantığı ekle: Sadece son 3 günün (72 saat) haberleri çekilecek.
 
 ## 5. NLP ve Embedding Tabanlı Tekilleştirme
 
@@ -136,8 +136,8 @@
   - similarity >= 0.90 ise tekilleştir
 - [x] Tekilleştirme kararını veri modelinde sakla (similarity_group_id).
 - [x] Eşiği doğrulamak için manuel örnekleme raporu hazırla.
-- [ ] Haber metinlerini analiz ederek 5 zorunlu türe (Trafik Kazası, Yangın, Elektrik Kesintisi, Hırsızlık, Kültürel Etkinlikler) göre anahtar kelime tabanlı sınıflandır.
-- [ ] Bir haber birden fazla kategoriye giriyorsa, öncelik sırası kurallarını uygula (Örn: Yangın > Kaza).
+- [x] Haber metinlerini analiz ederek 5 zorunlu türe (Trafik Kazası, Yangın, Elektrik Kesintisi, Hırsızlık, Kültürel Etkinlikler) göre anahtar kelime tabanlı sınıflandır.
+- [x] Bir haber birden fazla kategoriye giriyorsa, öncelik sırası kurallarını uygula (Örn: Yangın > Kaza).
 
 ## 6. Konum Çıkarımı ve Geocoding
 

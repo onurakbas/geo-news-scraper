@@ -1,4 +1,4 @@
-# Copilot Instructions - Geo News Scraper
+# ProjectInstructions - Geo News Scraper
 
 ## 1) Proje Amacı
 
