@@ -34,7 +34,12 @@ export interface FilterOptions {
 export interface MapMarker {
   _id: string;
   title: string;
-  coordinates: Coordinates;
-  type?: string;
-  district?: string;
+  type: string; 
+  district: string;
+  coordinates: {
+    type: string;
+    coordinates: [number, number]; // [boylam, enlem]
+  };
+  urls: string[]; 
+  sources?: string[]; 
 }

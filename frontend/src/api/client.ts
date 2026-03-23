@@ -1,17 +1,14 @@
-/**
- * Central Axios instance for all API calls.
- * All request/response interceptors go here – keep endpoints in dedicated modules.
- */
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "/api/v1",
+  baseURL: import.meta.env.VITE_API_URL, 
+  
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
   },
 });
 
-// Response error normalisation
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
