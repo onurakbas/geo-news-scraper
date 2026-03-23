@@ -40,8 +40,8 @@ const MapContainer = ({ markers }: Props) => {
         <Marker 
           key={m._id} 
           position={{ 
-            lat: m.coordinates.coordinates[1], 
-            lng: m.coordinates.coordinates[0] 
+            lat: m.lat, 
+            lng: m.lon 
           }}
           icon={getMarkerIcon(m.type)}
           onClick={() => setSelected(m)} // Tıklayınca haberi seç
@@ -52,8 +52,8 @@ const MapContainer = ({ markers }: Props) => {
       {selected && (
         <InfoWindow
           position={{ 
-            lat: selected.coordinates.coordinates[1], 
-            lng: selected.coordinates.coordinates[0] 
+            lat: selected.lat, 
+            lng: selected.lon 
           }}
           onCloseClick={() => setSelected(null)}
         >

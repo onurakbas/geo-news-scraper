@@ -165,12 +165,29 @@ async def get_map_markers(
 ) -> list[dict]:
     """
     Return all geocoded news as lightweight marker objects.
+    GeoJSON coordinates are unpacked to flat lat/lon fields.
     No pagination – the frontend handles clustering.
     """
     match = _build_match_stage(
         date_from, date_to, type_filter, district, require_coordinates=True
     )
     pipeline = _group_by_similarity_pipeline(match)
+
+    # Unpack GeoJSON: coordinates.coordinates = [lon, lat]
+    pipeline.append({
+        "$addFields": {
+            "lon": {"$arrayElemAt": ["$coordinates.coordinates", 0]},
+            "lat": {"$arrayElemAt": ["$coordinates.coordinates", 1]},
+        }
+    })
+    # Drop raw coordinates object – frontend only needs lat/lon
+    pipeline.append({
+        "$project": {
+            "coordinates": 0,
+            "city": 0,
+            "similarity_group_id": 0,
+        }
+    })
     pipeline.append({"$sort": {"published_at": -1}})
 
     cursor = db["news"].aggregate(pipeline)

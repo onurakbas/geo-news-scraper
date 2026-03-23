@@ -36,10 +36,8 @@ export interface MapMarker {
   title: string;
   type: string; 
   district: string;
-  coordinates: {
-    type: string;
-    coordinates: [number, number]; // [boylam, enlem]
-  };
+  lat: number;
+  lon: number;
   urls: string[]; 
   sources?: string[]; 
 }

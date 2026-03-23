@@ -64,7 +64,8 @@ class MarkerOut(BaseModel):
     published_at: Optional[datetime] = None
     type: Optional[str] = None
     district: Optional[str] = None
-    coordinates: CoordinatesSchema
+    lat: float  # extracted from GeoJSON coordinates[1]
+    lon: float  # extracted from GeoJSON coordinates[0]
     sources: list[str] = Field(default_factory=list)
     urls: list[str] = Field(default_factory=list)
 
