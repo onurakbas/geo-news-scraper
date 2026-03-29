@@ -59,7 +59,6 @@ export default function MapPage() {
     loadData();
   }, []);
 
-  // MapPage.tsx içinde return kısmını şu şekilde güncelle:
 
   return (
     <MainLayout>
@@ -75,27 +74,70 @@ export default function MapPage() {
       )}
 
       <FloatingFilterCard>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-          <CardTitle style={{ margin: 0 }}>Haber Radar</CardTitle>
-          <span style={{ fontSize: '0.7rem', color: '#ff4d4f', fontWeight: 'bold', border: '1px solid #ff4d4f', padding: '2px 6px', borderRadius: '10px' }}>CANLI</span>
-        </div>
+        <CardTitle>Haber Radar</CardTitle>
 
-        <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
-          {markers.map((news) => (
-            <div
-              key={news._id}
-              onClick={() => {/* Buraya haritayı o noktaya odaklama kodu gelecek */ }}
-              style={{
-                padding: '12px', background: '#fff', borderRadius: '12px', marginBottom: '10px',
-                cursor: 'pointer', border: '1px solid #eee', transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.borderColor = '#007bff'}
-              onMouseOut={(e) => e.currentTarget.style.borderColor = '#eee'}
-            >
-              <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#222' }}>{news.title}</div>
-              <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '5px' }}>📍 {news.district} | {news.type}</div>
-            </div>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* İlçe Filtresi */}
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666' }}>İlçe Seçin</label>
+            <select style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '4px' }}>
+              <option value="">Tüm Kocaeli</option>
+              <option value="izmit">İzmit</option>
+              <option value="gebze">Gebze</option>
+              <option value="kartepe">Kartepe</option>
+            </select>
+          </div>
+
+          {/* Tür Filtresi */}
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666' }}>Olay Türü</label>
+            <select style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '4px' }}>
+              <option value="">Tüm Olaylar</option>
+              <option value="trafik">Trafik Kazası</option>
+              <option value="yangin">Yangın</option>
+              <option value="hirsizlik">Hırsızlık</option>
+            </select>
+          </div>
+
+          {/* Tarih Filtresi */}
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666' }}>Zaman Aralığı</label>
+            <input type="date" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '4px' }} />
+          </div>
+
+        <button style={{
+            width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
+            background: '#007bff', color: '#fff', fontWeight: 'bold', cursor: 'pointer',
+            marginTop: '10px'
+          }}>
+            Filtrele
+          </button>
+
+          {/* --- EKSİK OLAN HABER LİSTESİ BURASI --- */}
+          <div style={{ 
+            marginTop: '20px', 
+            maxHeight: '300px', 
+            overflowY: 'auto',
+            paddingRight: '5px' 
+          }}>
+            <h3 style={{ fontSize: '0.9rem', marginBottom: '10px', color: '#666' }}>Son Haberler ({markers.length})</h3>
+            {markers.map((news) => (
+              <div 
+                key={news._id}
+                style={{ 
+                  padding: '10px', 
+                  background: '#f8f9fa', 
+                  borderRadius: '10px', 
+                  marginBottom: '8px',
+                  border: '1px solid #eee',
+                  fontSize: '0.8rem'
+                }}
+              >
+                <div style={{ fontWeight: 'bold', color: '#333' }}>{news.title}</div>
+                <div style={{ color: '#888', marginTop: '4px' }}>📍 {news.district} | {news.type}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </FloatingFilterCard>
 

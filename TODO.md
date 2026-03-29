@@ -163,9 +163,9 @@
 
 ## 8. React Harita ve Dinamik Filtreleme
 
-- [ ] Harita sayfasını kur.
-- [ ] Google Maps JS entegrasyonunu tamamla.
-- [ ] Marker ve popup bileşenlerini hazırla.
+- [x] Harita sayfasını kur.
+- [x] Google Maps JS entegrasyonunu tamamla.
+- [x] Marker ve popup bileşenlerini hazırla.
 - [ ] Filtre paneli oluştur:
   - tarih
   - tür
@@ -174,10 +174,10 @@
 - [ ] URL query param senkronizasyonu ekle.
 - [ ] Filtre değişimlerinde liste + haritayı eşzamanlı güncelle.
 - [ ] Marker cluster ekleyerek yoğun veri performansını iyileştir.
-- [ ] Haritanın başlangıç merkezini (center) Kocaeli merkez koordinatları olarak ayarla.
-- [ ] 5 farklı haber türü için 5 farklı renkte/sembolde marker ikonu tanımla.
+- [x] Haritanın başlangıç merkezini (center) Kocaeli merkez koordinatları olarak ayarla.
+- [x] 5 farklı haber türü için 5 farklı renkte/sembolde marker ikonu tanımla.
 - [ ] Marker'a tıklandığında açılan popup içeriğine şunları ekle: Başlık, Tarih, Tüm Kaynak Adları.
-- [ ] Popup içerisine "Habere Git" butonu ekle; tıklanınca kaynak siteyi yeni sekmede (`target="_blank"`) aç.
+- [x] Popup içerisine "Habere Git" butonu ekle; tıklanınca kaynak siteyi yeni sekmede (`target="_blank"`) aç.
 
 ## 9. Test ve Kalite
 
@@ -192,10 +192,10 @@
 
 ## 10. Güvenlik, Hata Yönetimi ve Gözlemlenebilirlik
 
-- [ ] API anahtarlarını yalnızca .env içinde tut.
-- [ ] İstek loglama ve hata loglama ekle.
+- [x] API anahtarlarını yalnızca .env içinde tut.
+- [x] İstek loglama ve hata loglama ekle.
 - [ ] Kritik akışlar için structured logging kullan.
-- [ ] Scraper ve geocoding hataları için fallback planı yaz.
+- [x] Scraper ve geocoding hataları için fallback planı yaz.
 - [ ] Basit rate limiting düşün.
 
 ## 11. Dokümantasyon ve Teslim Hazırlığı

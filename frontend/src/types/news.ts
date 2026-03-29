@@ -34,10 +34,11 @@ export interface FilterOptions {
 export interface MapMarker {
   _id: string;
   title: string;
-  type: string; 
+  type: string;
   district: string;
-  lat: number;
+  lat: number; 
   lon: number;
-  urls: string[]; 
-  sources?: string[]; 
+  urls: string[];
+  sources?: string[];
+  published_at?: string;
 }
