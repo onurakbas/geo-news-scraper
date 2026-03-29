@@ -1,106 +1,298 @@
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-import { useState } from 'react';
+import { GoogleMap, useJsApiLoader, OverlayView, InfoWindow } from '@react-google-maps/api';
+import { useState, useCallback } from 'react';
 import { MapMarker } from '../../types/news';
 
+/* ─── Constants ───────────────────────────────────────────── */
 const KOCAELI_CENTER = { lat: 40.7654, lng: 29.9408 };
-const mapContainerStyle = { width: '100%', height: '100%' };
+const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
-// Haber türüne göre iğne rengi belirleme fonksiyonu
-const getMarkerIcon = (type: string) => {
-  const color = type === 'Yangın' ? 'red' : type === 'Kaza' ? 'orange' : 'blue';
-  return `http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+/* ─── Dark map style ──────────────────────────────────────── */
+const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry',                                                   stylers: [{ color: '#10141a' }] },
+  { elementType: 'labels.text.stroke',                                         stylers: [{ color: '#10141a' }] },
+  { elementType: 'labels.text.fill',                                           stylers: [{ color: '#454652' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill',   stylers: [{ color: '#c6c5d4' }] },
+  { featureType: 'poi',                     elementType: 'labels',             stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.park',                elementType: 'geometry',           stylers: [{ color: '#13191f' }] },
+  { featureType: 'road',                    elementType: 'geometry',           stylers: [{ color: '#1c2026' }] },
+  { featureType: 'road',                    elementType: 'geometry.stroke',    stylers: [{ color: '#0a0e14' }] },
+  { featureType: 'road',                    elementType: 'labels.text.fill',   stylers: [{ color: '#454652' }] },
+  { featureType: 'road.highway',            elementType: 'geometry',           stylers: [{ color: '#242830' }] },
+  { featureType: 'road.highway',            elementType: 'geometry.stroke',    stylers: [{ color: '#0a0e14' }] },
+  { featureType: 'road.highway',            elementType: 'labels.text.fill',   stylers: [{ color: '#616672' }] },
+  { featureType: 'transit',                 elementType: 'geometry',           stylers: [{ color: '#13191f' }] },
+  { featureType: 'water',                   elementType: 'geometry',           stylers: [{ color: '#050a10' }] },
+  { featureType: 'water',                   elementType: 'labels.text.fill',   stylers: [{ color: '#1c2026' }] },
+];
+
+/* ─── Marker config per type ──────────────────────────────── */
+type Cfg = { bg: string; border: string; emoji: string; label: string; ping: string };
+
+const TYPE_CFG: Record<string, Cfg> = {
+  'Trafik Kazası':         { bg: '#f59e0b', border: '#d97706', emoji: '🚗', label: 'TRAFİK KAZASI',  ping: 'rgba(245,158,11,0.4)'  },
+  'Yangın':                { bg: '#ef4444', border: '#dc2626', emoji: '🔥', label: 'YANGIN',          ping: 'rgba(239,68,68,0.4)'   },
+  'Elektrik Kesintisi':    { bg: '#b6c4ff', border: '#7391ff', emoji: '⚡', label: 'ELEKTRİK',        ping: 'rgba(182,196,255,0.4)' },
+  'Hırsızlık':             { bg: '#a855f7', border: '#9333ea', emoji: '🎭', label: 'HIRSIZLIK',       ping: 'rgba(168,85,247,0.4)'  },
+  'Kültürel Etkinlikler':  { bg: '#22c55e', border: '#16a34a', emoji: '🎵', label: 'KÜLTÜR',          ping: 'rgba(34,197,94,0.4)'   },
+};
+const DEFAULT_CFG: Cfg = { bg: '#908f9d', border: '#454652', emoji: '📌', label: 'DİĞER', ping: 'rgba(144,143,157,0.4)' };
+const getCfg = (type: string): Cfg => TYPE_CFG[type] ?? DEFAULT_CFG;
+
+/* ─── Inject keyframes once ───────────────────────────────── */
+let keyframesInjected = false;
+const injectKeyframes = () => {
+  if (keyframesInjected) return;
+  keyframesInjected = true;
+  const s = document.createElement('style');
+  s.textContent = `
+    @keyframes _sentinel_ping {
+      0%   { transform: scale(1);   opacity: 0.7; }
+      100% { transform: scale(2.6); opacity: 0;   }
+    }
+    @keyframes _sentinel_spin {
+      to { transform: rotate(360deg); }
+    }
+    /* Strip Google's InfoWindow chrome */
+    .gm-style .gm-style-iw-c {
+      padding: 0 !important;
+      border-radius: 20px !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      overflow: visible !important;
+    }
+    .gm-style .gm-style-iw-d {
+      overflow: hidden !important;
+      padding: 0 !important;
+    }
+    .gm-ui-hover-effect { display: none !important; }
+    .gm-style-iw-t::after { display: none !important; }
+    .gm-style-iw-tc { display: none !important; }
+  `;
+  document.head.appendChild(s);
 };
 
-interface Props {
-  markers: MapMarker[];
+/* ─── Pin component ───────────────────────────────────────── */
+interface PinProps { marker: MapMarker; isActive: boolean; onClick: () => void }
+
+function NewsPin({ marker, isActive, onClick }: PinProps) {
+  injectKeyframes();
+  const cfg = getCfg(marker.type);
+  const size = isActive ? 46 : 38;
+
+  return (
+    <OverlayView
+      position={{ lat: marker.lat, lng: marker.lon }}
+      mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+      getPixelPositionOffset={() => ({ x: -size / 2, y: -size / 2 })}
+    >
+      <div onClick={onClick} style={{ width: size, height: size, position: 'relative', cursor: 'pointer' }}>
+        {/* Ping */}
+        {isActive && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            borderRadius: '50%',
+            background: cfg.ping,
+            animation: '_sentinel_ping 1.3s ease-out infinite',
+          }} />
+        )}
+        {/* Body */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          borderRadius: '50%',
+          background: cfg.bg,
+          border: `3px solid ${cfg.border}`,
+          boxShadow: `0 4px 18px ${cfg.ping}, 0 2px 6px rgba(0,0,0,0.55)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: isActive ? 21 : 17,
+          transition: 'all 0.18s ease',
+          userSelect: 'none',
+        }}>
+          {cfg.emoji}
+        </div>
+      </div>
+    </OverlayView>
+  );
 }
+
+/* ─── Popup ───────────────────────────────────────────────── */
+interface PopupProps { marker: MapMarker; onClose: () => void }
+
+function SentinelPopup({ marker, onClose }: PopupProps) {
+  const cfg = getCfg(marker.type);
+  const date = marker.published_at
+    ? new Date(marker.published_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '—';
+
+  const row = (icon: string, content: React.ReactNode) => (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      <span style={{ fontSize: 13, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+      <span style={{ fontSize: 11, color: '#908f9d', lineHeight: 1.5 }}>{content}</span>
+    </div>
+  );
+
+  return (
+    <InfoWindow
+      position={{ lat: marker.lat, lng: marker.lon }}
+      onCloseClick={onClose}
+      options={{
+        disableAutoPan: false,
+        pixelOffset: new window.google.maps.Size(0, -56),
+        maxWidth: 300,
+      }}
+    >
+      {/* negative margin eats Google's default padding */}
+      <div style={{ margin: -14, background: 'transparent' }}>
+        <div style={{
+          width: 282,
+          background: 'linear-gradient(145deg, #1e232b 0%, #181c22 100%)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 20,
+          padding: '20px',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          color: '#dfe2eb',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)',
+        }}>
+          {/* Glow */}
+          <div style={{
+            position: 'absolute', top: -60, right: -60,
+            width: 130, height: 130, borderRadius: '50%',
+            background: cfg.ping, filter: 'blur(45px)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Badge + close */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{
+              background: `${cfg.bg}1a`, color: cfg.bg,
+              fontSize: 9, fontWeight: 800,
+              letterSpacing: '0.14em', textTransform: 'uppercase' as const,
+              padding: '4px 10px', borderRadius: 99,
+              border: `1px solid ${cfg.bg}40`,
+            }}>
+              {cfg.emoji} {cfg.label}
+            </span>
+            <button onClick={onClose} style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 99, width: 26, height: 26,
+              cursor: 'pointer', color: '#908f9d',
+              fontSize: 13, lineHeight: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'system-ui',
+            }}>✕</button>
+          </div>
+
+          {/* Title */}
+          <p style={{
+            fontFamily: "'Manrope', 'Inter', sans-serif",
+            fontWeight: 800, fontSize: 14,
+            lineHeight: 1.45, color: '#fff',
+            margin: '0 0 14px',
+          }}>
+            {marker.title}
+          </p>
+
+          {/* Meta */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+            {row('📅', date)}
+            {marker.district && row('📍', marker.district)}
+            {marker.sources?.length
+              ? row('📰', <>Kaynak: <strong style={{ color: cfg.bg }}>{marker.sources.join(', ')}</strong></>)
+              : null}
+          </div>
+
+          {/* CTA */}
+          <a
+            href={marker.urls?.[0] ?? '#'}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              width: '100%', background: cfg.bg, color: '#10141a',
+              fontWeight: 800, fontSize: 12, letterSpacing: '0.04em',
+              padding: '11px 0', borderRadius: 12,
+              textDecoration: 'none',
+              boxShadow: `0 6px 22px ${cfg.ping}`,
+              transition: 'opacity 0.15s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.opacity = '0.82')}
+            onMouseOut={e  => (e.currentTarget.style.opacity = '1')}
+          >
+            Habere Git →
+          </a>
+        </div>
+      </div>
+    </InfoWindow>
+  );
+}
+
+/* ─── Main ────────────────────────────────────────────────── */
+interface Props { markers: MapMarker[] }
 
 const MapContainer = ({ markers }: Props) => {
   const [selected, setSelected] = useState<MapMarker | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
   });
 
-  return isLoaded ? (
+  const handleClick = useCallback((m: MapMarker) => {
+    setSelected(prev => (prev?._id === m._id ? null : m));
+  }, []);
+
+  if (!isLoaded) {
+    return (
+      <div style={{
+        width: '100%', height: '100%', background: '#10141a',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 14,
+      }}>
+        <div style={{
+          width: 44, height: 44,
+          border: '4px solid rgba(182,196,255,0.12)',
+          borderTopColor: '#b6c4ff', borderRadius: '50%',
+          animation: '_sentinel_spin 0.9s linear infinite',
+        }} />
+        <span style={{
+          fontFamily: 'Inter, sans-serif', color: '#b6c4ff',
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.3em',
+        }}>HARİTA YÜKLENİYOR…</span>
+      </div>
+    );
+  }
+
+  return (
     <GoogleMap
-      mapContainerStyle={mapContainerStyle}
+      mapContainerStyle={MAP_CONTAINER_STYLE}
       center={KOCAELI_CENTER}
       zoom={11}
       options={{
-        // Harita butonlarını kartın altından çekip başka yere taşıyoruz
-        zoomControlOptions: { position: 3 }, // Sağ alt (BOTTOM_RIGHT)
-        streetViewControl: false, // Gereksizse kapat alanı ferahlat
-        mapTypeControlOptions: { position: 1 }, // Sağ üst (TOP_RIGHT)
-        fullscreenControlOptions: { position: 9 }, // Sağ orta (RIGHT_CENTER)
+        styles: DARK_MAP_STYLE,
+        disableDefaultUI: true,
+        gestureHandling: 'greedy',
+        clickableIcons: false,
       }}
+      onClick={() => setSelected(null)}
     >
-      {Array.isArray(markers) && markers.map((m) => (
-        <Marker
-          key={m._id}
-          position={{
-            lat: m.lat,
-            lng: m.lon
-          }}
-          icon={getMarkerIcon(m.type)}
-          onClick={() => setSelected(m)} // Tıklayınca haberi seç
-        />
-      ))}
+      {Array.isArray(markers) && markers.map(m => {
+        if (typeof m.lat !== 'number' || typeof m.lon !== 'number') return null;
+        return (
+          <NewsPin
+            key={m._id}
+            marker={m}
+            isActive={selected?._id === m._id}
+            onClick={() => handleClick(m)}
+          />
+        );
+      })}
 
-      {/* HABER DETAY PENCERESİ (POPUP) */}
-      {selected && (
-        <InfoWindow
-          position={{
-            lat: selected.lat,
-            lng: selected.lon
-          }}
-          onCloseClick={() => setSelected(null)}
-        >
-          {/* InfoWindow içeriğini zenginleştiriyoruz */}
-          <div style={{ padding: '12px', maxWidth: '280px', color: '#1a1a1b' }}>
-            <div style={{ fontSize: '0.75rem', color: '#ff4d4f', fontWeight: 600, marginBottom: '4px', textTransform: 'uppercase' }}>
-              {selected.type}
-            </div>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', lineHeight: '1.4', fontWeight: 'bold' }}>
-              {selected.title}
-            </h3>
-
-            <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span>📍 {selected.district}</span>
-              {/* Tarih formatını güzelleştiriyoruz */}
-              <span>📅 {new Date(selected.published_at || Date.now()).toLocaleDateString('tr-TR')}</span>
-            </div>
-
-            <div style={{ borderTop: '1px solid #eee', paddingTop: '10px', marginTop: '10px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#888' }}>KAYNAKLAR:</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px' }}>
-                {/* Çoklu kaynakları dökümana uygun listeliyoruz */}
-                {selected.sources?.map((source, index) => (
-                  <span key={index} style={{ background: '#f0f2f5', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>
-                    {source}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <a
-              href={selected.urls[0]}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'block', textAlign: 'center', background: '#007bff', color: '#fff',
-                padding: '8px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold',
-                marginTop: '15px', fontSize: '0.85rem'
-              }}
-            >
-              Habere Git →
-            </a>
-          </div>
-        </InfoWindow>
-      )}
+      {selected && <SentinelPopup marker={selected} onClose={() => setSelected(null)} />}
     </GoogleMap>
-  ) : <div>Yükleniyor...</div>;
+  );
 };
 
 export default MapContainer;

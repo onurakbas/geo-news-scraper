@@ -1,147 +1,425 @@
-import { useEffect, useState } from 'react';
-import { styled } from '@stitches/react';
+import { useEffect, useState, useCallback } from 'react';
 import MapContainer from '../components/map/MapContainer';
 import { newsService } from '../api/newsService';
 import { MapMarker } from '../types/news';
 
-// --- YENİ PROFESYONEL STYLED COMPONENTS ---
+/* ─── Types & constants ───────────────────────────────────── */
+type EventType = 'Trafik Kazası' | 'Yangın' | 'Elektrik Kesintisi' | 'Hırsızlık' | 'Kültürel Etkinlikler';
 
-// Tüm ekranı kaplayan ana kapsayıcı
-const MainLayout = styled('main', {
-  width: '100vw',
-  height: '100vh',
-  position: 'relative',
-  overflow: 'hidden',
-});
+const EVENT_FILTERS = [
+  { label: 'Trafik Kazası'        as EventType, emoji: '🚗', color: '#f59e0b' },
+  { label: 'Yangın'               as EventType, emoji: '🔥', color: '#ef4444' },
+  { label: 'Elektrik Kesintisi'   as EventType, emoji: '⚡', color: '#b6c4ff' },
+  { label: 'Hırsızlık'            as EventType, emoji: '🎭', color: '#a855f7' },
+  { label: 'Kültürel Etkinlikler' as EventType, emoji: '🎵', color: '#22c55e' },
+];
 
-// Haritanın üzerinde yüzen Filtre Kartı
-const FloatingFilterCard = styled('div', {
-  position: 'absolute',
-  top: '20px',
-  left: '20px',
-  width: '320px',
-  background: 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(12px)',
-  padding: '1.5rem',
-  borderRadius: '20px',
-  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-  zIndex: 1000, // En üstte olduğundan emin olalım
-  border: '1px solid rgba(255, 255, 255, 0.4)',
-  pointerEvents: 'auto', // Tıklanabilir olmasını sağlar
-});
+const DISTRICTS   = ['Tüm İlçeler', 'İzmit', 'Gebze', 'Derince', 'Körfez', 'Kartepe', 'Gölcük', 'Çayırova', 'Dilovası'];
+const TIME_RANGES = ['Son 24 Saat', 'Son 3 Gün', 'Son 1 Hafta'];
 
-const CardTitle = styled('h2', {
-  fontSize: '1.1rem',
-  fontWeight: 'bold',
-  marginBottom: '1rem',
-  color: '#333',
-});
+const accentOf = (type: string): string =>
+  ({ 'Yangın': '#ef4444', 'Trafik Kazası': '#f59e0b', 'Elektrik Kesintisi': '#b6c4ff', 'Hırsızlık': '#a855f7', 'Kültürel Etkinlikler': '#22c55e' }[type] ?? '#908f9d');
 
-// --- ANA BİLEŞEN ---
+const emojiOf = (type: string): string =>
+  ({ 'Yangın': '🔥', 'Trafik Kazası': '🚗', 'Elektrik Kesintisi': '⚡', 'Hırsızlık': '🎭', 'Kültürel Etkinlikler': '🎵' }[type] ?? '📌');
 
+const timeAgo = (d?: string) => {
+  if (!d) return '';
+  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  if (m < 60) return `${m} dk önce`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} saat önce`;
+  return `${Math.floor(h / 24)} gün önce`;
+};
+
+/* ─── Shared inline style tokens ─────────────────────────── */
+const S = {
+  input: {
+    width: '100%', background: '#262a31', color: '#dfe2eb',
+    border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12,
+    padding: '10px 36px 10px 14px', fontSize: 13,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    appearance: 'none' as const, outline: 'none', cursor: 'pointer',
+  } as React.CSSProperties,
+  label: {
+    display: 'block', fontSize: 9, fontWeight: 700,
+    color: '#454652', letterSpacing: '0.2em',
+    textTransform: 'uppercase' as const, marginBottom: 8,
+  } as React.CSSProperties,
+};
+
+/* ─── Component ───────────────────────────────────────────── */
 export default function MapPage() {
-  const [markers, setMarkers] = useState<MapMarker[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allMarkers,  setAllMarkers]  = useState<MapMarker[]>([]);
+  const [markers,     setMarkers]     = useState<MapMarker[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
+    new Set(EVENT_FILTERS.map(e => e.label))
+  );
+  const [district,    setDistrict]    = useState('Tüm İlçeler');
+  const [timeRange,   setTimeRange]   = useState('Son 3 Gün');
+  const [search,      setSearch]      = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const response = await newsService.getMarkers();
-        if (response && Array.isArray(response.markers)) {
-          setMarkers(response.markers);
-        }
-      } catch (error) {
-        console.error("Veri çekilirken hata:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+  /* fetch */
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await newsService.getMarkers();
+      if (res?.markers) { setAllMarkers(res.markers); setMarkers(res.markers); }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, []);
 
+  useEffect(() => { loadData(); }, [loadData]);
 
+  /* filter */
+  const applyFilters = useCallback(() => {
+    let r = allMarkers.filter(m => activeTypes.has(m.type as EventType));
+    if (district !== 'Tüm İlçeler') r = r.filter(m => m.district?.includes(district));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      r = r.filter(m => m.title?.toLowerCase().includes(q) || m.district?.toLowerCase().includes(q));
+    }
+    setMarkers(r);
+  }, [allMarkers, activeTypes, district, search]);
+
+  const toggleType = (t: EventType) =>
+    setActiveTypes(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n; });
+
+  /* ── render ── */
   return (
-    <MainLayout>
-      {/* LOADING EKRANI (TypeScript hatasını çözer ve profesyonel durur) */}
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      height: '100vh', background: '#10141a',
+      color: '#dfe2eb', overflow: 'hidden', position: 'relative',
+      fontFamily: 'Inter, system-ui, sans-serif',
+    }}>
+
+      {/* ── Loading overlay ── */}
       {loading && (
         <div style={{
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(255,255,255,0.7)', zIndex: 100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
+          position: 'absolute', inset: 0, zIndex: 200,
+          background: 'rgba(16,20,26,0.85)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 16,
         }}>
-          <strong>Haberler Radar Tarafından Taranıyor...</strong>
+          <div style={{
+            width: 50, height: 50,
+            border: '4px solid rgba(182,196,255,0.12)',
+            borderTopColor: '#b6c4ff',
+            borderRadius: '50%',
+            animation: '_sentinel_spin 0.85s linear infinite',
+          }} />
+          <span style={{ color: '#b6c4ff', fontSize: 10, fontWeight: 700, letterSpacing: '0.3em' }}>
+            RADAR TARANIYOR…
+          </span>
         </div>
       )}
 
-      <FloatingFilterCard>
-        <CardTitle>Haber Radar</CardTitle>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* İlçe Filtresi */}
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666' }}>İlçe Seçin</label>
-            <select style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '4px' }}>
-              <option value="">Tüm Kocaeli</option>
-              <option value="izmit">İzmit</option>
-              <option value="gebze">Gebze</option>
-              <option value="kartepe">Kartepe</option>
-            </select>
-          </div>
-
-          {/* Tür Filtresi */}
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666' }}>Olay Türü</label>
-            <select style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '4px' }}>
-              <option value="">Tüm Olaylar</option>
-              <option value="trafik">Trafik Kazası</option>
-              <option value="yangin">Yangın</option>
-              <option value="hirsizlik">Hırsızlık</option>
-            </select>
-          </div>
-
-          {/* Tarih Filtresi */}
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#666' }}>Zaman Aralığı</label>
-            <input type="date" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '4px' }} />
-          </div>
-
-        <button style={{
-            width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
-            background: '#007bff', color: '#fff', fontWeight: 'bold', cursor: 'pointer',
-            marginTop: '10px'
-          }}>
-            Filtrele
-          </button>
-
-          {/* --- EKSİK OLAN HABER LİSTESİ BURASI --- */}
-          <div style={{ 
-            marginTop: '20px', 
-            maxHeight: '300px', 
-            overflowY: 'auto',
-            paddingRight: '5px' 
-          }}>
-            <h3 style={{ fontSize: '0.9rem', marginBottom: '10px', color: '#666' }}>Son Haberler ({markers.length})</h3>
-            {markers.map((news) => (
-              <div 
-                key={news._id}
-                style={{ 
-                  padding: '10px', 
-                  background: '#f8f9fa', 
-                  borderRadius: '10px', 
-                  marginBottom: '8px',
-                  border: '1px solid #eee',
-                  fontSize: '0.8rem'
-                }}
-              >
-                <div style={{ fontWeight: 'bold', color: '#333' }}>{news.title}</div>
-                <div style={{ color: '#888', marginTop: '4px' }}>📍 {news.district} | {news.type}</div>
-              </div>
-            ))}
-          </div>
+      {/* ── Header ── */}
+      <header style={{
+        position: 'fixed', top: 0, width: '100%', height: 64, zIndex: 100,
+        background: 'rgba(16,20,26,0.82)',
+        backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        boxShadow: '0 4px 40px rgba(0,0,0,0.5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 24px',
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: '#00267e',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, position: 'relative',
+            boxShadow: '0 0 0 2px rgba(182,196,255,0.2), 0 0 20px rgba(182,196,255,0.15)',
+          }}>📡</div>
+          <span style={{
+            fontFamily: 'Manrope, Inter, sans-serif',
+            fontWeight: 800, fontSize: 18,
+            letterSpacing: '-0.02em', textTransform: 'uppercase' as const,
+            color: '#b6c4ff',
+          }}>Haber Radar</span>
         </div>
-      </FloatingFilterCard>
 
-      <MapContainer markers={markers} />
-    </MainLayout>
+        {/* Search */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: '#1c2026', borderRadius: 99,
+          padding: '9px 20px', border: '1px solid rgba(255,255,255,0.06)',
+          width: '32%', minWidth: 220,
+        }}>
+          <span style={{ fontSize: 16, color: '#454652' }}>🔍</span>
+          <input
+            placeholder="Kocaeli'de ara…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && applyFilters()}
+            style={{
+              background: 'transparent', border: 'none', outline: 'none',
+              fontSize: 13, color: '#dfe2eb', width: '100%',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+          />
+        </div>
+
+        {/* Right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={loadData}
+            style={{
+              width: 38, height: 38, borderRadius: '50%',
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer', color: '#b6c4ff', fontSize: 18,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            title="Yenile"
+          >↻</button>
+
+          {/* Live badge */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: '#1c2026', border: '1px solid rgba(255,255,255,0.06)',
+            padding: '7px 14px', borderRadius: 99,
+          }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: '#22c55e', display: 'inline-block',
+              boxShadow: '0 0 8px #22c55e',
+            }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: '0.15em' }}>CANLI</span>
+            <div style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#908f9d' }}>{markers.length} haber</span>
+          </div>
+
+          {/* Avatar */}
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: '#00267e', border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+          }}>👤</div>
+        </div>
+      </header>
+
+      {/* ── Body ── */}
+      <main style={{ display: 'flex', flex: 1, paddingTop: 64, overflow: 'hidden' }}>
+
+        {/* ── Sidebar ── */}
+        <aside style={{
+          width: 296, flexShrink: 0,
+          background: '#181c22',
+          borderRight: '1px solid rgba(255,255,255,0.05)',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          zIndex: 40,
+          boxShadow: '4px 0 30px rgba(0,0,0,0.4)',
+        }}>
+          <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+            {/* Brand */}
+            <div>
+              <div style={{ fontFamily: 'Manrope, Inter, sans-serif', fontWeight: 800, fontSize: 20, color: '#dfe2eb' }}>
+                Kocaeli News
+              </div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#454652', letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 4 }}>
+                The Sentinel Perspective
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* District */}
+              <div>
+                <label style={S.label}>İlçe</label>
+                <div style={{ position: 'relative' }}>
+                  <select value={district} onChange={e => setDistrict(e.target.value)} style={S.input}>
+                    {DISTRICTS.map(d => <option key={d}>{d}</option>)}
+                  </select>
+                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#454652', fontSize: 16 }}>▾</span>
+                </div>
+              </div>
+
+              {/* Time range */}
+              <div>
+                <label style={S.label}>Zaman Aralığı</label>
+                <div style={{ position: 'relative' }}>
+                  <select value={timeRange} onChange={e => setTimeRange(e.target.value)} style={S.input}>
+                    {TIME_RANGES.map(r => <option key={r}>{r}</option>)}
+                  </select>
+                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#454652', fontSize: 16 }}>▾</span>
+                </div>
+              </div>
+
+              {/* Event types */}
+              <div>
+                <label style={S.label}>Olay Türü</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {EVENT_FILTERS.map(({ label, emoji, color }) => {
+                    const on = activeTypes.has(label);
+                    return (
+                      <label key={label} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+                        background: on ? `${color}14` : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${on ? color + '30' : 'rgba(255,255,255,0.04)'}`,
+                        transition: 'all 0.15s',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 18 }}>{emoji}</span>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: on ? '#dfe2eb' : '#908f9d' }}>{label}</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => toggleType(label)}
+                          style={{ accentColor: color, width: 15, height: 15, cursor: 'pointer' }}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <button
+                  onClick={applyFilters}
+                  style={{
+                    background: '#262a31', color: '#dfe2eb',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 12, padding: '12px 0',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.background = '#31353c')}
+                  onMouseOut={e  => (e.currentTarget.style.background = '#262a31')}
+                >
+                  Filtrele
+                </button>
+                <button
+                  onClick={loadData}
+                  style={{
+                    background: '#b6c4ff', color: '#002780',
+                    border: 'none', borderRadius: 12, padding: '12px 0',
+                    fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    boxShadow: '0 0 20px rgba(182,196,255,0.25)',
+                    transition: 'all 0.15s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.boxShadow = '0 0 30px rgba(182,196,255,0.45)')}
+                  onMouseOut={e  => (e.currentTarget.style.boxShadow = '0 0 20px rgba(182,196,255,0.25)')}
+                >
+                  Veri Çek ↻
+                </button>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+
+            {/* News feed */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 16 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#454652', letterSpacing: '0.2em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, position: 'sticky', top: 0, background: '#181c22', paddingBottom: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', boxShadow: '0 0 8px #ef4444' }} />
+                Son Haberler
+              </div>
+
+              {markers.length === 0 && !loading && (
+                <div style={{ color: '#454652', fontSize: 12, textAlign: 'center', padding: '32px 0' }}>
+                  Haber bulunamadı.
+                </div>
+              )}
+
+              {markers.map(news => {
+                const accent = accentOf(news.type);
+                const emoji  = emojiOf(news.type);
+                return (
+                  <div key={news._id} style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    borderRadius: 12, padding: '12px 14px',
+                    cursor: 'pointer', transition: 'background 0.15s',
+                    display: 'flex', gap: 12, alignItems: 'flex-start',
+                  }}
+                    onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                    onMouseOut={e  => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                  >
+                    {/* Icon bubble */}
+                    <div style={{
+                      flexShrink: 0, width: 36, height: 36, borderRadius: 10,
+                      background: `${accent}18`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 17, marginTop: 1,
+                    }}>{emoji}</div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        margin: 0, fontSize: 12, fontWeight: 600,
+                        lineHeight: 1.45, color: '#dfe2eb',
+                        overflow: 'hidden', display: '-webkit-box',
+                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+                      }}>{news.title}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                        {news.district && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#908f9d', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                            {news.district}
+                          </span>
+                        )}
+                        {news.district && <span style={{ fontSize: 9, color: '#31353c' }}>•</span>}
+                        <span style={{ fontSize: 9, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                          {news.type}
+                        </span>
+                        {news.published_at && (
+                          <>
+                            <span style={{ fontSize: 9, color: '#31353c' }}>•</span>
+                            <span style={{ fontSize: 9, color: '#454652' }}>{timeAgo(news.published_at)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Map area ── */}
+        <section style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          {/* Zoom controls */}
+          <div style={{ position: 'absolute', bottom: 32, right: 32, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {['+', '−'].map(icon => (
+              <button key={icon} style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: 'rgba(28,32,38,0.82)', backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: '#dfe2eb', fontSize: 20, fontWeight: 300,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                transition: 'background 0.15s',
+              }}
+                onMouseOver={e => (e.currentTarget.style.background = 'rgba(38,42,49,0.95)')}
+                onMouseOut={e  => (e.currentTarget.style.background = 'rgba(28,32,38,0.82)')}
+              >{icon}</button>
+            ))}
+            <button style={{
+              width: 44, height: 44, borderRadius: '50%', marginTop: 8,
+              background: 'rgba(28,32,38,0.82)', backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(182,196,255,0.25)',
+              color: '#b6c4ff', fontSize: 18,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}>◎</button>
+          </div>
+
+          <MapContainer markers={markers} />
+        </section>
+      </main>
+    </div>
   );
 }
