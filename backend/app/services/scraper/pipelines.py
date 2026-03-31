@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 import pymongo
 from pymongo import errors as pymongo_errors
 from loguru import logger
+from scrapy import signals
 from scrapy import Spider
 from scrapy.exceptions import DropItem
 
@@ -35,12 +36,12 @@ class ValidationPipeline:
 
     REQUIRED_FIELDS = ("url", "title", "source")
 
-    def process_item(self, item: NewsItem, spider: Spider) -> NewsItem:
+    def process_item(self, item: NewsItem) -> NewsItem:
         for field in self.REQUIRED_FIELDS:
             value = item.get(field)
             if not value or not str(value).strip():
                 raise DropItem(
-                    f"[{spider.name}] Missing required field '{field}' – url={item.get('url')}"
+                    f"Missing required field '{field}' – url={item.get('url')}"
                 )
         return item
 
@@ -57,20 +58,18 @@ class DateFilterPipeline:
 
     MAX_AGE: timedelta = timedelta(hours=72)
 
-    def process_item(self, item: NewsItem, spider: Spider) -> NewsItem:
+    def process_item(self, item: NewsItem) -> NewsItem:
         published_at: datetime | None = item.get("published_at")
         if published_at is None:
-            # Cannot determine age – let it through
             return item
 
-        # Make timezone-aware for safe comparison
         if published_at.tzinfo is None:
             published_at = published_at.replace(tzinfo=timezone.utc)
 
         age = datetime.now(tz=timezone.utc) - published_at
         if age > self.MAX_AGE:
             raise DropItem(
-                f"[{spider.name}] Article too old ({age.days}d {age.seconds//3600}h) – "
+                f"Article too old ({age.days}d {age.seconds//3600}h) – "
                 f"url={item.get('url')}"
             )
         return item
@@ -84,31 +83,46 @@ class RawHtmlPipeline:
     Never blocks the scrape – exceptions are logged and swallowed.
     """
 
-    def open_spider(self, spider: Spider) -> None:
+    def __init__(self, crawler) -> None:
+        self._crawler = crawler
+        self.base_dir: Path = Path("data/raw")
+        self._spider_name: str = "unknown"
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        inst = cls(crawler)
+        crawler.signals.connect(inst._on_spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(inst._on_spider_closed, signal=signals.spider_closed)
+        return inst
+
+    def _on_spider_opened(self, spider) -> None:
+        self._spider_name = spider.name
         raw_dir = spider.settings.get("RAW_HTML_DIR", "data/raw")
         self.base_dir = Path(raw_dir) / spider.name
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    def process_item(self, item: NewsItem, spider: Spider) -> NewsItem:
+    def _on_spider_closed(self, spider) -> None:
+        pass  # nothing to close for file I/O
+
+    def process_item(self, item: NewsItem) -> NewsItem:
         raw_html: bytes | None = item.get("raw_html")
         if not raw_html:
             return item
 
         try:
             url: str = item.get("url", "unknown")
-            # Build a filesystem-safe filename from the URL
             slug = (
                 url.split("://", 1)[-1]
                 .replace("/", "_")
                 .replace("?", "_")
                 .replace("&", "_")
                 .replace("=", "_")
-                [:180]  # cap length
+                [:180]
             )
             dest = self.base_dir / f"{slug}.html"
             dest.write_bytes(raw_html)
         except Exception as exc:  # noqa: BLE001
-            logger.warning(f"[{spider.name}] RawHtmlPipeline could not save HTML: {exc}")
+            logger.warning(f"[{self._spider_name}] RawHtmlPipeline could not save HTML: {exc}")
 
         return item
 
@@ -121,15 +135,28 @@ class MongoNewsPipeline:
 
     Duplicate handling (two layers):
       a) Scrapy DupeFilter – prevents re-visiting the same URL in one run.
-      b) MongoDB unique index on `url` – insert_one is wrapped with
-         UpdateOne + upsert=False equivalent; duplicate key errors are
+      b) MongoDB unique index on `url` – duplicate key errors are
          caught and logged, not re-raised.
 
     Connection is synchronous (pymongo) because Scrapy's reactor is
     synchronous by default in the pipeline layer.
     """
 
-    def open_spider(self, spider: Spider) -> None:
+    def __init__(self, crawler) -> None:
+        self._crawler = crawler
+        self._spider_name: str = "unknown"
+        self.client = None
+        self.collection = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        inst = cls(crawler)
+        crawler.signals.connect(inst._on_spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(inst._on_spider_closed, signal=signals.spider_closed)
+        return inst
+
+    def _on_spider_opened(self, spider) -> None:
+        self._spider_name = spider.name
         mongo_uri: str = spider.settings.get(
             "MONGODB_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017")
         )
@@ -137,24 +164,26 @@ class MongoNewsPipeline:
             "MONGODB_DB_NAME", os.getenv("MONGODB_DB_NAME", "geo_news")
         )
         self.client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
-        self.db = self.client[db_name]
-        self.collection = self.db["news"]
-
-        # Ensure the unique URL index exists (idempotent)
-        self.collection.create_index("url", unique=True, background=True)
+        db = self.client[db_name]
+        self.collection = db["news"]
+        try:
+            self.collection.create_index("url", unique=True, background=True)
+        except pymongo_errors.OperationFailure:
+            # Index might already exist with a different name, ignore.
+            pass
         logger.info(
             f"[{spider.name}] MongoNewsPipeline connected → "
             f"{mongo_uri} / db={db_name}"
         )
 
-    def close_spider(self, spider: Spider) -> None:
-        self.client.close()
+    def _on_spider_closed(self, spider) -> None:
+        if self.client:
+            self.client.close()
         logger.info(f"[{spider.name}] MongoNewsPipeline connection closed.")
 
-    def process_item(self, item: NewsItem, spider: Spider) -> NewsItem:
+    def process_item(self, item: NewsItem) -> NewsItem:
         now = datetime.now(tz=timezone.utc)
 
-        # Classify article into one of the 5 mandatory categories
         news_type = classify_news(
             title=item.get("title", ""),
             content=item.get("content", ""),
@@ -169,7 +198,6 @@ class MongoNewsPipeline:
             "type": news_type,
             "district": item.get("district"),
             "city": item.get("city", "Kocaeli"),
-            # Enrichment fields – populated by later pipeline stages (NLP, geocoding)
             "locations": [],
             "coordinates": None,
             "embedding": None,
@@ -179,24 +207,16 @@ class MongoNewsPipeline:
         }
 
         try:
-            # Use update_one with upsert=True so the document is created only
-            # when the URL is new; existing docs are NOT overwritten.
             result = self.collection.update_one(
                 filter={"url": doc["url"]},
                 update={"$setOnInsert": doc},
                 upsert=True,
             )
             if result.upserted_id is not None:
-                logger.debug(
-                    f"[{spider.name}] Inserted: {doc['url']}"
-                )
+                logger.debug(f"[{self._spider_name}] Inserted: {doc['url']}")
             else:
-                logger.debug(
-                    f"[{spider.name}] Skipped duplicate: {doc['url']}"
-                )
+                logger.debug(f"[{self._spider_name}] Skipped duplicate: {doc['url']}")
         except pymongo_errors.PyMongoError as exc:
-            logger.error(
-                f"[{spider.name}] MongoDB error for {doc['url']}: {exc}"
-            )
+            logger.error(f"[{self._spider_name}] MongoDB error for {doc['url']}: {exc}")
 
         return item

@@ -51,6 +51,7 @@ ITEM_PIPELINES = {
 DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "app.services.scraper.middlewares.RandomUserAgentMiddleware": 400,
+    "app.services.scraper.middlewares.AntiBotDetectionMiddleware": 200,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
 }
 

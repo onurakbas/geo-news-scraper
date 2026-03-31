@@ -59,6 +59,8 @@ export default function MapPage() {
   const [district,    setDistrict]    = useState('Tüm İlçeler');
   const [timeRange,   setTimeRange]   = useState('Son 3 Gün');
   const [search,      setSearch]      = useState('');
+  const [scraping,    setScraping]    = useState(false);
+  const [scrapeMsg,   setScrapeMsg]   = useState<string | null>(null);
 
   /* fetch */
   const loadData = useCallback(async () => {
@@ -71,6 +73,31 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  /* scrape trigger + poll */
+  const handleScrape = useCallback(async () => {
+    if (scraping) return;
+    setScraping(true);
+    setScrapeMsg(null);
+    try {
+      await newsService.triggerScrape();
+      // Poll every 2s until idle
+      const poll = setInterval(async () => {
+        const s = await newsService.getScrapeStatus();
+        if (s.status === 'idle') {
+          clearInterval(poll);
+          setScraping(false);
+          setScrapeMsg(s.last_error ? `Hata: ${s.last_error}` : 'Veri çekildi ✅');
+          await loadData(); // refresh markers
+          setTimeout(() => setScrapeMsg(null), 5000);
+        }
+      }, 2000);
+    } catch (e: any) {
+      setScraping(false);
+      setScrapeMsg(e.message?.includes('409') ? 'Zaten çalışıyor…' : `Hata: ${e.message}`);
+      setTimeout(() => setScrapeMsg(null), 5000);
+    }
+  }, [scraping, loadData]);
 
   /* filter */
   const applyFilters = useCallback(() => {
@@ -177,6 +204,27 @@ export default function MapPage() {
             }}
             title="Yenile"
           >↻</button>
+
+          {/* Scrape button */}
+          <button
+            onClick={handleScrape}
+            disabled={scraping}
+            title={scraping ? 'Kazıma devam ediyor…' : 'Güncel veri çek'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', borderRadius: 99,
+              background: scraping ? '#1c2026' : scrapeMsg?.startsWith('Hata') ? '#3b0000' : '#00267e',
+              border: `1px solid ${scraping ? 'rgba(255,255,255,0.06)' : scrapeMsg?.startsWith('Hata') ? '#ef4444' : '#b6c4ff'}`,
+              color: scraping ? '#454652' : scrapeMsg?.startsWith('Hata') ? '#ef4444' : '#b6c4ff',
+              fontSize: 12, fontWeight: 700, cursor: scraping ? 'not-allowed' : 'pointer',
+              letterSpacing: '0.05em', transition: 'all 0.2s',
+            }}
+          >
+            {scraping
+              ? <span style={{ display: 'inline-block', animation: '_sentinel_spin 0.9s linear infinite' }}>⟳</span>
+              : '🕷️'}
+            {scraping ? 'Çekiliyor…' : scrapeMsg ?? 'Veri Çek'}
+          </button>
 
           {/* Live badge */}
           <div style={{

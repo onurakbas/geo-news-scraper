@@ -3,21 +3,28 @@ FastAPI application entry point for Geo News Scraper.
 Initialises the app, registers routers, and exposes /health endpoint.
 """
 
+import asyncio
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.client import connect_db, disconnect_db, get_database
 from app.db.indexes import create_all_indexes
+from app.services.scraper.runner import run_spiders_background
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_db()
     await create_all_indexes(get_database())
+    # Fire-and-forget: fetch fresh news on every startup
+    logger.info("🚀 Server started – launching background scrape...")
+    asyncio.create_task(run_spiders_background())
     yield
     await disconnect_db()
 

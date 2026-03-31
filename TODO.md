@@ -194,7 +194,7 @@
 
 - [x] API anahtarlarını yalnızca .env içinde tut.
 - [x] İstek loglama ve hata loglama ekle.
-- [ ] Kritik akışlar için structured logging kullan.
+- [x] Kritik akışlar için structured logging kullan.
 - [x] Scraper ve geocoding hataları için fallback planı yaz.
 - [ ] Basit rate limiting düşün.
 
