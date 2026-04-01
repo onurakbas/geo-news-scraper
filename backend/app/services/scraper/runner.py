@@ -56,6 +56,7 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
     try:
         # Run the existing scripts/run_spiders.py sequentially for each spider
         for name in spider_names:
+            logger.info(f"🕷️ {name.replace('_', ' ').title()} sitesinden haberler çekilmeye başlandı...")
             proc = await asyncio.create_subprocess_exec(
                 sys.executable,
                 str(script_path),
@@ -76,6 +77,24 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
         if _state["last_error"] is None:
             _state["last_run"] = datetime.now(tz=timezone.utc).isoformat()
             logger.info("✅ Scraper subprocess finished.")
+            # ── Auto-geocode: resolve districts → GPS coordinates ──────────
+            logger.info("🗺️  Geocoding başlatılıyor – harita pinleri için koordinatlar hesaplanıyor...")
+            try:
+                geocode_script = repo_root / "scripts" / "run_geocode.py"
+                gproc = await asyncio.create_subprocess_exec(
+                    sys.executable,
+                    str(geocode_script),
+                    cwd=str(repo_root),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                gout, gerr = await gproc.communicate()
+                if gproc.returncode == 0:
+                    logger.info(f"🗺️  Geocoding tamamlandı:\n{gout.decode()}")
+                else:
+                    logger.warning(f"⚠️  Geocoding hata ile bitti:\n{gerr.decode()[-500:]}")
+            except Exception as gexc:
+                logger.warning(f"⚠️  Geocoding başlatılamadı: {repr(gexc)}")
     except Exception as exc:
         import traceback
         _state["last_error"] = repr(exc)

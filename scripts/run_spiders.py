@@ -21,6 +21,11 @@ from pathlib import Path
 # Ensure the backend package is importable when running from the project root.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(dotenv_path=env_path)
+
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 

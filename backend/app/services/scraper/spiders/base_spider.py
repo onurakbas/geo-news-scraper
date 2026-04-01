@@ -22,7 +22,6 @@ from app.services.scraper.items import NewsItem
 from app.services.scraper.parsers.date_parser import parse_date
 from app.services.scraper.parsers.text_cleaner import clean_text
 
-
 class BaseNewsSpider(scrapy.Spider):
     # Subclasses override these
     source_label: str = ""
@@ -30,9 +29,14 @@ class BaseNewsSpider(scrapy.Spider):
     next_page_css: str | None = None
     max_pages: int = 20  # guard against infinite pagination
 
-    custom_settings = {
-        "HTTPERROR_ALLOWED_CODES": [404],
-    }
+    def start_requests(self) -> Generator:
+        """Yield initial requests routed through ScraperAPI Middleware."""
+        for url in self.start_urls:
+            yield scrapy.Request(
+                url=url,
+                callback=self.parse,
+                dont_filter=True,
+            )
 
     def parse(self, response: Response) -> Generator:
         """Parse a listing/category page and follow article links."""
@@ -46,7 +50,10 @@ class BaseNewsSpider(scrapy.Spider):
                 url = response.urljoin(href)
                 if url not in seen_urls:
                     seen_urls.add(url)
-                    yield scrapy.Request(url, callback=self.parse_article)
+                    yield scrapy.Request(
+                        url,
+                        callback=self.parse_article,
+                    )
 
         # Pagination – follow "next page" link up to max_pages
         if self.next_page_css:

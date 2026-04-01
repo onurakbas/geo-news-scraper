@@ -94,7 +94,8 @@ export default function MapPage() {
       }, 2000);
     } catch (e: any) {
       setScraping(false);
-      setScrapeMsg(e.message?.includes('409') ? 'Zaten çalışıyor…' : `Hata: ${e.message}`);
+      const isConflict = e.response?.status === 409 || e.status === 409 || e.message?.includes('409');
+      setScrapeMsg(isConflict ? 'Zaten çalışıyor…' : `Hata: ${e.message}`);
       setTimeout(() => setScrapeMsg(null), 5000);
     }
   }, [scraping, loadData]);

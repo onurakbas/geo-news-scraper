@@ -19,7 +19,7 @@ _BLOCK_PATTERNS: list[tuple[str, str]] = [
     ("just a moment", "Cloudflare JS challenge"),
     ("cf-browser-verification", "Cloudflare browser verification"),
     ("ray id", "Cloudflare Ray ID detected"),
-    ("cloudflare", "Cloudflare protection page"),
+    ("attention required! | cloudflare", "Cloudflare protection page"),
     # Generic CAPTCHA
     ("recaptcha", "reCAPTCHA challenge"),
     ("hcaptcha", "hCaptcha challenge"),
@@ -39,7 +39,7 @@ _BLOCK_STATUS_CODES: set[int] = {403, 429, 503, 520, 521, 522, 523, 524, 525, 52
 _CF_HEADERS: set[str] = {"cf-ray", "cf-cache-status", "cf-request-id"}
 
 
-def _check_response_for_blocks(response: Response, spider) -> None:  # noqa: C901
+def _check_response_for_blocks(request, response: Response, spider) -> None:  # noqa: C901
     """
     Inspect a response for anti-bot signals and emit clear log messages.
     Does NOT raise or drop items – purely observational.
@@ -47,14 +47,27 @@ def _check_response_for_blocks(response: Response, spider) -> None:  # noqa: C90
     source = getattr(spider, "source_label", spider.name)
     url = response.url
 
-    # ── 1. HTTP status code check ────────────────────────────────────────────
-    if response.status in _BLOCK_STATUS_CODES:
-        spider.logger.error(
-            "🚫 [BLOCKED – HTTP %s] %s → %s",
-            response.status,
-            source,
-            url,
-        )
+    # ── 1. Check HTTP status blocks ──────────────────────────────────────────
+    if response.status in (403, 401, 429, 503):
+        # If Playwright is active, a 403 might just be the initial JS Challenge status
+        # but the DOM might be solved. Downgrade to WARNING instead of ERROR.
+        is_playwright = False
+        if request is not None:
+            is_playwright = request.meta.get("playwright", False)
+            
+        if response.status == 403 and is_playwright:
+            spider.logger.debug(
+                "🛡️  [POTENTIAL BLOCK – 403] %s → %s (Playwright might solve this)",
+                source,
+                url,
+            )
+        else:
+            spider.logger.error(
+                "🚫 [BLOCKED – HTTP %d] %s → %s",
+                response.status,
+                source,
+                url,
+            )
 
     elif response.status != 200:
         spider.logger.warning(
@@ -147,10 +160,10 @@ class AntiBotDetectionMiddleware:
             "\U0001f6e1\ufe0f  AntiBotDetectionMiddleware active for spider: %s", spider.name
         )
 
-    def process_response(self, request: Request, response: Response) -> Response:
+    def process_response(self, request, response: Response, spider):
         """Check every response for anti-bot signals, then pass it through."""
         if self._spider is not None:
-            _check_response_for_blocks(response, self._spider)
+            _check_response_for_blocks(request, response, self._spider)
         return response  # always return – never drop here
 
     def process_exception(self, request: Request, exception) -> None:
@@ -165,3 +178,5 @@ class AntiBotDetectionMiddleware:
             type(exception).__name__,
             exception,
         )
+
+

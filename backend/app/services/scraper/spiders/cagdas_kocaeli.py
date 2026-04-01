@@ -16,8 +16,8 @@ class CagdasKocaeliSpider(BaseNewsSpider):
     allowed_domains = ["cagdaskocaeli.com.tr"]
     start_urls = [
         "https://www.cagdaskocaeli.com.tr/",
-        "https://www.cagdaskocaeli.com.tr/kategori/gundem/",
-        "https://www.cagdaskocaeli.com.tr/kategori/son-dakika/",
+        "https://www.cagdaskocaeli.com.tr/kategori/gundem",
+        "https://www.cagdaskocaeli.com.tr/kategori/son-dakika",
     ]
 
     # Article links on listing pages
@@ -27,8 +27,8 @@ class CagdasKocaeliSpider(BaseNewsSpider):
         "div.post-content a",
         "a.news-link",
         "div.category-news h2 a",
-        "article a[href*='/haber/']",
-        "article a[href*='/gundem/']",
+        "a[href*='/haber/']",
+        "a[href*='/gundem/']",
     ]
     next_page_css = "a.next.page-numbers"
 

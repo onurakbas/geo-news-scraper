@@ -10,16 +10,23 @@ BOT_NAME = "geo_news_scraper"
 SPIDER_MODULES = ["app.services.scraper.spiders"]
 NEWSPIDER_MODULE = "app.services.scraper.spiders"
 
+# ── ScraperAPI Configuration ──────────────────────────────────────────────────
+SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY")
+if not SCRAPERAPI_KEY:
+    import logging
+    logging.warning("⚠️  SCRAPERAPI_KEY is not set in environment! ScraperAPI proxy will not work.")
+
+
 # ── Politeness ──────────────────────────────────────────────────────────────
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 DOWNLOAD_DELAY = 1.5
 RANDOMIZE_DOWNLOAD_DELAY = True
-CONCURRENT_REQUESTS = 8
-CONCURRENT_REQUESTS_PER_DOMAIN = 2
+CONCURRENT_REQUESTS = 16  # Back to normal without Playwright RAM overhead
+CONCURRENT_REQUESTS_PER_DOMAIN = 4
 AUTOTHROTTLE_ENABLED = True
 AUTOTHROTTLE_START_DELAY = 1
 AUTOTHROTTLE_MAX_DELAY = 10
-AUTOTHROTTLE_TARGET_CONCURRENCY = 1.5
+AUTOTHROTTLE_TARGET_CONCURRENCY = 2.0
 
 # ── User-Agent rotation ─────────────────────────────────────────────────────
 USER_AGENT_LIST = [
@@ -34,17 +41,24 @@ USER_AGENT = USER_AGENT_LIST[0]
 # ── Retries ─────────────────────────────────────────────────────────────────
 RETRY_TIMES = 3
 RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429]
-HTTPERROR_ALLOWED_CODES = [404]  # 404s are logged, not treated as errors
+HTTPERROR_ALLOWED_CODES = [404]  # Reverted 403 block allowance since ScraperAPI bypasses them natively
 
 # ── Timeouts ────────────────────────────────────────────────────────────────
-DOWNLOAD_TIMEOUT = 20
+DOWNLOAD_DELAY = 1.0  # Optional: keep a small delay, ScraperAPI manages rate limits, but politeness helps
+DOWNLOAD_TIMEOUT = 120
+
+# ── Custom Handlers for TLS Impersonation ───────────────────────────────────
+DOWNLOAD_HANDLERS = {
+    "http": "app.services.scraper.handlers.CurlCffiDownloadHandler",
+    "https": "app.services.scraper.handlers.CurlCffiDownloadHandler",
+}
 
 # ── Pipelines ───────────────────────────────────────────────────────────────
 ITEM_PIPELINES = {
     "app.services.scraper.pipelines.ValidationPipeline": 100,
-    "app.services.scraper.pipelines.DateFilterPipeline": 150,
-    "app.services.scraper.pipelines.RawHtmlPipeline": 200,
-    "app.services.scraper.pipelines.MongoNewsPipeline": 300,
+    "app.services.scraper.pipelines.DateFilterPipeline": 200,
+    "app.services.scraper.pipelines.RawHtmlPipeline": 300,
+    "app.services.scraper.pipelines.MongoNewsPipeline": 400,
 }
 
 # ── Middleware ───────────────────────────────────────────────────────────────

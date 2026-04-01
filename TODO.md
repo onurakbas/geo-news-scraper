@@ -166,6 +166,12 @@
 - [x] Harita sayfasını kur.
 - [x] Google Maps JS entegrasyonunu tamamla.
 - [x] Marker ve popup bileşenlerini hazırla.
+- [x] Scrapy-Playwright Başarısızlığı ve ScraperAPI Devre Dışı
+- [x] TLS Impersonation (curl_cffi) Entegrasyonu
+  - [x] `pip install curl_cffi` kurulumu
+  - [x] `ScraperApiMiddleware` temizliği
+  - [x] `CurlCffiDownloadHandler` oluşturularak Scrapy'nin `http/https` isteklerini `curl_cffi` üzerinden tam Chrome taklidiyle yapmasının sağlanması
+  - [x] Terminalden haberlerin başarılı parse edildiğinin onaylanması
 - [ ] Filtre paneli oluştur:
   - tarih
   - tür
