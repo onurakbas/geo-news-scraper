@@ -7,21 +7,22 @@ import { MapMarker } from '../types/news';
 type EventType = 'Trafik Kazası' | 'Yangın' | 'Elektrik Kesintisi' | 'Hırsızlık' | 'Kültürel Etkinlikler';
 
 const EVENT_FILTERS = [
-  { label: 'Trafik Kazası'        as EventType, emoji: '🚗', color: '#f59e0b' },
-  { label: 'Yangın'               as EventType, emoji: '🔥', color: '#ef4444' },
-  { label: 'Elektrik Kesintisi'   as EventType, emoji: '⚡', color: '#b6c4ff' },
-  { label: 'Hırsızlık'            as EventType, emoji: '🎭', color: '#a855f7' },
-  { label: 'Kültürel Etkinlikler' as EventType, emoji: '🎵', color: '#22c55e' },
+  { label: 'Trafik Kazası' as EventType, emoji: '🚗', color: '#f59e0b' },
+  { label: 'Yangın' as EventType, emoji: '🔥', color: '#ef4444' },
+  { label: 'Elektrik Kesintisi' as EventType, emoji: '⚡', color: '#b6c4ff' },
+  { label: 'Hırsızlık' as EventType, emoji: '⛓️‍💥', color: '#a855f7' },
+  { label: 'Kültürel Etkinlikler' as EventType, emoji: '🎭', color: '#a43d77' },
+  { label: 'Diğer' as EventType, emoji: '〰️', color: '#22c55e' },
 ];
 
-const DISTRICTS   = ['Tüm İlçeler', 'İzmit', 'Gebze', 'Derince', 'Körfez', 'Kartepe', 'Gölcük', 'Çayırova', 'Dilovası'];
+const DISTRICTS = ['Tüm İlçeler', 'İzmit', 'Gebze', 'Derince', 'Körfez', 'Kartepe', 'Gölcük', 'Çayırova', 'Dilovası'];
 const TIME_RANGES = ['Son 24 Saat', 'Son 3 Gün', 'Son 1 Hafta'];
 
 const accentOf = (type: string): string =>
-  ({ 'Yangın': '#ef4444', 'Trafik Kazası': '#f59e0b', 'Elektrik Kesintisi': '#b6c4ff', 'Hırsızlık': '#a855f7', 'Kültürel Etkinlikler': '#22c55e' }[type] ?? '#908f9d');
+  ({ 'Yangın': '#ef4444', 'Trafik Kazası': '#f59e0b', 'Elektrik Kesintisi': '#b6c4ff', 'Hırsızlık': '#a855f7', 'Kültürel Etkinlikler': '#a43d77' }[type] ?? '#4b486f');
 
 const emojiOf = (type: string): string =>
-  ({ 'Yangın': '🔥', 'Trafik Kazası': '🚗', 'Elektrik Kesintisi': '⚡', 'Hırsızlık': '🎭', 'Kültürel Etkinlikler': '🎵' }[type] ?? '📌');
+  ({ 'Yangın': '🔥', 'Trafik Kazası': '🚗', 'Elektrik Kesintisi': '⚡', 'Hırsızlık': '⛓️‍💥', 'Kültürel Etkinlikler': '🎭' }[type] ?? '〰️');
 
 const timeAgo = (d?: string) => {
   if (!d) return '';
@@ -50,17 +51,20 @@ const S = {
 
 /* ─── Component ───────────────────────────────────────────── */
 export default function MapPage() {
-  const [allMarkers,  setAllMarkers]  = useState<MapMarker[]>([]);
-  const [markers,     setMarkers]     = useState<MapMarker[]>([]);
-  const [loading,     setLoading]     = useState(true);
+  const [allMarkers, setAllMarkers] = useState<MapMarker[]>([]);
+  const [markers, setMarkers] = useState<MapMarker[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
-    new Set(EVENT_FILTERS.map(e => e.label))
+    new Set(EVENT_FILTERS.map(e => e.label)) // Bu satır artık 'Diğer'i de içerecek
   );
-  const [district,    setDistrict]    = useState('Tüm İlçeler');
-  const [timeRange,   setTimeRange]   = useState('Son 3 Gün');
-  const [search,      setSearch]      = useState('');
-  const [scraping,    setScraping]    = useState(false);
-  const [scrapeMsg,   setScrapeMsg]   = useState<string | null>(null);
+  const [district, setDistrict] = useState('Tüm İlçeler');
+  const [timeRange, setTimeRange] = useState('Son 3 Gün');
+  const [isCustomDate, setIsCustomDate] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [search, setSearch] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeMsg, setScrapeMsg] = useState<string | null>(null);
 
   /* fetch */
   const loadData = useCallback(async () => {
@@ -101,18 +105,58 @@ export default function MapPage() {
   }, [scraping, loadData]);
 
   /* filter */
-  const applyFilters = useCallback(() => {
+  useEffect(() => {
+    // 1. Kategori (Type) Filtrelemesi
     let r = allMarkers.filter(m => activeTypes.has(m.type as EventType));
-    if (district !== 'Tüm İlçeler') r = r.filter(m => m.district?.includes(district));
+
+    // 2. İlçe Filtrelemesi
+    if (district !== 'Tüm İlçeler') {
+      r = r.filter(m => m.district === district);
+    }
+
+    // 3. Arama Filtrelemesi
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter(m => m.title?.toLowerCase().includes(q) || m.district?.toLowerCase().includes(q));
     }
+
+    // 4. Tarih Filtreleme Mantığı (Yeni Eklenen Kısım)
+    const now = Date.now();
+
+    if (isCustomDate) {
+      // Özel Tarih Aralığı Seçiliyse
+      if (startDate) {
+        const start = new Date(startDate).setHours(0, 0, 0, 0);
+        r = r.filter(m => m.published_at && new Date(m.published_at).getTime() >= start);
+      }
+      if (endDate) {
+        const end = new Date(endDate).setHours(23, 59, 59, 999);
+        r = r.filter(m => m.published_at && new Date(m.published_at).getTime() <= end);
+      }
+    } else {
+      // Hazır Zaman Aralıkları Seçiliyse
+      let msLimit = 0;
+      if (timeRange === 'Son 24 Saat') msLimit = 24 * 60 * 60 * 1000;
+      else if (timeRange === 'Son 3 Gün') msLimit = 3 * 24 * 60 * 60 * 1000;
+      else if (timeRange === 'Son 1 Hafta') msLimit = 7 * 24 * 60 * 60 * 1000;
+
+      if (msLimit > 0) {
+        r = r.filter(m => m.published_at && (now - new Date(m.published_at).getTime()) <= msLimit);
+      }
+    }
+
     setMarkers(r);
-  }, [allMarkers, activeTypes, district, search]);
+
+    // Bağımlılıklar listesine tarih state'lerini de ekledik
+  }, [allMarkers, activeTypes, district, search, timeRange, startDate, endDate, isCustomDate]);
 
   const toggleType = (t: EventType) =>
     setActiveTypes(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n; });
+
+  const handleTimeChange = (val: string) => {
+    setTimeRange(val);
+    setIsCustomDate(val === 'Özel Tarih Seç...');
+  };
 
   /* ── render ── */
   return (
@@ -184,7 +228,7 @@ export default function MapPage() {
             placeholder="Kocaeli'de ara…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && applyFilters()}
+            // onKeyDown satırını tamamen silebilirsin, useEffect sen yazdıkça filtreleyecek
             style={{
               background: 'transparent', border: 'none', outline: 'none',
               fontSize: 13, color: '#dfe2eb', width: '100%',
@@ -295,11 +339,34 @@ export default function MapPage() {
               <div>
                 <label style={S.label}>Zaman Aralığı</label>
                 <div style={{ position: 'relative' }}>
-                  <select value={timeRange} onChange={e => setTimeRange(e.target.value)} style={S.input}>
+                  <select
+                    value={timeRange}
+                    onChange={e => handleTimeChange(e.target.value)} // Burayı güncelledik
+                    style={S.input}
+                  >
                     {TIME_RANGES.map(r => <option key={r}>{r}</option>)}
+                    <option>Özel Tarih Seç...</option> {/* Bu seçeneği ekledik */}
                   </select>
                   <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#454652', fontSize: 16 }}>▾</span>
                 </div>
+
+                {/* --- Yeni Eklenen Input Bloğu --- */}
+                {isCustomDate && (
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="date"
+                        style={{ ...S.input, padding: '8px' }}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                      <input
+                        type="date"
+                        style={{ ...S.input, padding: '8px' }}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Event types */}
@@ -335,7 +402,7 @@ export default function MapPage() {
               {/* Action buttons */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <button
-                  onClick={applyFilters}
+                  // onClick kısmını siliyoruz, artık otomatik çalışıyor
                   style={{
                     background: '#262a31', color: '#dfe2eb',
                     border: '1px solid rgba(255,255,255,0.07)',
@@ -344,8 +411,6 @@ export default function MapPage() {
                     fontFamily: 'Inter, system-ui, sans-serif',
                     transition: 'background 0.15s',
                   }}
-                  onMouseOver={e => (e.currentTarget.style.background = '#31353c')}
-                  onMouseOut={e  => (e.currentTarget.style.background = '#262a31')}
                 >
                   Filtrele
                 </button>
@@ -361,7 +426,7 @@ export default function MapPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}
                   onMouseOver={e => (e.currentTarget.style.boxShadow = '0 0 30px rgba(182,196,255,0.45)')}
-                  onMouseOut={e  => (e.currentTarget.style.boxShadow = '0 0 20px rgba(182,196,255,0.25)')}
+                  onMouseOut={e => (e.currentTarget.style.boxShadow = '0 0 20px rgba(182,196,255,0.25)')}
                 >
                   Veri Çek ↻
                 </button>
@@ -386,7 +451,7 @@ export default function MapPage() {
 
               {markers.map(news => {
                 const accent = accentOf(news.type);
-                const emoji  = emojiOf(news.type);
+                const emoji = emojiOf(news.type);
                 return (
                   <div key={news._id} style={{
                     background: 'rgba(255,255,255,0.03)',
@@ -396,7 +461,7 @@ export default function MapPage() {
                     display: 'flex', gap: 12, alignItems: 'flex-start',
                   }}
                     onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
-                    onMouseOut={e  => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                    onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
                   >
                     {/* Icon bubble */}
                     <div style={{
@@ -453,7 +518,7 @@ export default function MapPage() {
                 transition: 'background 0.15s',
               }}
                 onMouseOver={e => (e.currentTarget.style.background = 'rgba(38,42,49,0.95)')}
-                onMouseOut={e  => (e.currentTarget.style.background = 'rgba(28,32,38,0.82)')}
+                onMouseOut={e => (e.currentTarget.style.background = 'rgba(28,32,38,0.82)')}
               >{icon}</button>
             ))}
             <button style={{

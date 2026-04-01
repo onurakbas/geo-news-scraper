@@ -8,34 +8,34 @@ const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
 /* ─── Dark map style ──────────────────────────────────────── */
 const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry',                                                   stylers: [{ color: '#10141a' }] },
-  { elementType: 'labels.text.stroke',                                         stylers: [{ color: '#10141a' }] },
-  { elementType: 'labels.text.fill',                                           stylers: [{ color: '#454652' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill',   stylers: [{ color: '#c6c5d4' }] },
-  { featureType: 'poi',                     elementType: 'labels',             stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.park',                elementType: 'geometry',           stylers: [{ color: '#13191f' }] },
-  { featureType: 'road',                    elementType: 'geometry',           stylers: [{ color: '#1c2026' }] },
-  { featureType: 'road',                    elementType: 'geometry.stroke',    stylers: [{ color: '#0a0e14' }] },
-  { featureType: 'road',                    elementType: 'labels.text.fill',   stylers: [{ color: '#454652' }] },
-  { featureType: 'road.highway',            elementType: 'geometry',           stylers: [{ color: '#242830' }] },
-  { featureType: 'road.highway',            elementType: 'geometry.stroke',    stylers: [{ color: '#0a0e14' }] },
-  { featureType: 'road.highway',            elementType: 'labels.text.fill',   stylers: [{ color: '#616672' }] },
-  { featureType: 'transit',                 elementType: 'geometry',           stylers: [{ color: '#13191f' }] },
-  { featureType: 'water',                   elementType: 'geometry',           stylers: [{ color: '#050a10' }] },
-  { featureType: 'water',                   elementType: 'labels.text.fill',   stylers: [{ color: '#1c2026' }] },
+  { elementType: 'geometry', stylers: [{ color: '#10141a' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#10141a' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#454652' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#c6c5d4' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#13191f' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1c2026' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#0a0e14' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#454652' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#242830' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#0a0e14' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#616672' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#13191f' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#050a10' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#1c2026' }] },
 ];
 
 /* ─── Marker config per type ──────────────────────────────── */
 type Cfg = { bg: string; border: string; emoji: string; label: string; ping: string };
 
 const TYPE_CFG: Record<string, Cfg> = {
-  'Trafik Kazası':         { bg: '#f59e0b', border: '#d97706', emoji: '🚗', label: 'TRAFİK KAZASI',  ping: 'rgba(245,158,11,0.4)'  },
-  'Yangın':                { bg: '#ef4444', border: '#dc2626', emoji: '🔥', label: 'YANGIN',          ping: 'rgba(239,68,68,0.4)'   },
-  'Elektrik Kesintisi':    { bg: '#b6c4ff', border: '#7391ff', emoji: '⚡', label: 'ELEKTRİK',        ping: 'rgba(182,196,255,0.4)' },
-  'Hırsızlık':             { bg: '#a855f7', border: '#9333ea', emoji: '🎭', label: 'HIRSIZLIK',       ping: 'rgba(168,85,247,0.4)'  },
-  'Kültürel Etkinlikler':  { bg: '#22c55e', border: '#16a34a', emoji: '🎵', label: 'KÜLTÜR',          ping: 'rgba(34,197,94,0.4)'   },
+  'Trafik Kazası': { bg: '#f59e0b', border: '#d97706', emoji: '🚗', label: 'TRAFİK KAZASI', ping: 'rgba(245,158,11,0.4)' },
+  'Yangın': { bg: '#ef4444', border: '#dc2626', emoji: '🔥', label: 'YANGIN', ping: 'rgba(239,68,68,0.4)' },
+  'Elektrik Kesintisi': { bg: '#b6c4ff', border: '#7391ff', emoji: '⚡', label: 'ELEKTRİK', ping: 'rgba(182,196,255,0.4)' },
+  'Hırsızlık': { bg: '#a855f7', border: '#9333ea', emoji: '⛓️‍💥', label: 'HIRSIZLIK', ping: 'rgba(168,85,247,0.4)' },
+  'Kültürel Etkinlikler': { bg: '#a43d77', border: '#8b0b54', emoji: '🎭', label: 'KÜLTÜR', ping: 'rgba(34,197,94,0.4)' },
 };
-const DEFAULT_CFG: Cfg = { bg: '#908f9d', border: '#454652', emoji: '📌', label: 'DİĞER', ping: 'rgba(144,143,157,0.4)' };
+const DEFAULT_CFG: Cfg = { bg: '#908f9d', border: '#22c55e', emoji: '〰️', label: 'DİĞER', ping: 'rgba(144,143,157,0.4)' };
 const getCfg = (type: string): Cfg => TYPE_CFG[type] ?? DEFAULT_CFG;
 
 /* ─── Inject keyframes once ───────────────────────────────── */
@@ -199,9 +199,16 @@ function SentinelPopup({ marker, onClose }: PopupProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
             {row('📅', date)}
             {marker.district && row('📍', marker.district)}
-            {marker.sources?.length
-              ? row('📰', <>Kaynak: <strong style={{ color: cfg.bg }}>{marker.sources.join(', ')}</strong></>)
-              : null}
+            {(marker.sources ?? []).length > 0 && row('📰', (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                Kaynaklar:
+                {(marker.sources ?? []).map((src, i) => (
+                  <strong key={i} style={{ color: cfg.bg }}>
+                    {src}{(marker.sources ?? []).length - 1 !== i ? ',' : ''}
+                  </strong>
+                ))}
+              </div>
+            ))}
           </div>
 
           {/* CTA */}
@@ -219,7 +226,7 @@ function SentinelPopup({ marker, onClose }: PopupProps) {
               transition: 'opacity 0.15s',
             }}
             onMouseOver={e => (e.currentTarget.style.opacity = '0.82')}
-            onMouseOut={e  => (e.currentTarget.style.opacity = '1')}
+            onMouseOut={e => (e.currentTarget.style.opacity = '1')}
           >
             Habere Git →
           </a>
@@ -278,12 +285,17 @@ const MapContainer = ({ markers }: Props) => {
       }}
       onClick={() => setSelected(null)}
     >
-      {Array.isArray(markers) && markers.map(m => {
+      {Array.isArray(markers) && markers.map((m, index) => {
         if (typeof m.lat !== 'number' || typeof m.lon !== 'number') return null;
+
+        // Çakışmayı önlemek için küçük bir sapma (Jittering) ekleyelim
+        const jitterLat = m.lat + (Math.sin(index) * 0.00015);
+        const jitterLon = m.lon + (Math.cos(index) * 0.00015);
+
         return (
           <NewsPin
             key={m._id}
-            marker={m}
+            marker={{ ...m, lat: jitterLat, lon: jitterLon }}
             isActive={selected?._id === m._id}
             onClick={() => handleClick(m)}
           />

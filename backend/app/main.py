@@ -2,7 +2,7 @@
 FastAPI application entry point for Geo News Scraper.
 Initialises the app, registers routers, and exposes /health endpoint.
 """
-
+import sys
 import asyncio
 
 from contextlib import asynccontextmanager
@@ -17,6 +17,9 @@ from app.db.client import connect_db, disconnect_db, get_database
 from app.db.indexes import create_all_indexes
 from app.services.scraper.runner import run_spiders_background
 
+# Windows üzerinde paralel subprocess çalıştırmak için şart:
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
