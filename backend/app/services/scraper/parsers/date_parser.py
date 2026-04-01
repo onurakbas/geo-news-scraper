@@ -20,10 +20,10 @@ _TR_MONTHS: dict[str, int] = {
     "eylül": 9, "ekim": 10, "kasım": 11, "aralık": 12,
 }
 
-# e.g. "17 Mart 2026 15:30" or "17 Mart 2026"
+# e.g. "17 Mart 2026 15:30" or "17 Mart 2026" or "17 Mart 202615:30" (no space before time)
 _TR_PATTERN = re.compile(
-    r"(\d{1,2})\s+([A-Za-zÇçĞğİiÖöŞşÜü]+)\s+(\d{4})"
-    r"(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?",
+    r"(\d{1,2})\s+([A-Za-z\u00c7\u00e7\u011e\u011f\u0130\u0131\u00d6\u00f6\u015e\u015f\u00dc\u00fc]+)\s+(\d{4})"
+    r"(?:[\s:]*(\d{1,2}):(\d{2})(?::(\d{2}))?)?",
     re.IGNORECASE,
 )
 

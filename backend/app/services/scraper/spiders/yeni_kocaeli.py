@@ -53,6 +53,8 @@ class YeniKocaeliSpider(BaseNewsSpider):
 
         published_at = self._extract_date(
             response,
+            "div.yazi-tarih",    # Primary on article pages
+            "span.post-date",    # Fallback
             "span.tarih",
             "time",
             "span.date",
