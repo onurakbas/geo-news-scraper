@@ -12,10 +12,11 @@ Subclasses must define:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Generator, Iterable
 
 import scrapy
+from scrapy.exceptions import CloseSpider
 from scrapy.http import Response
 
 from app.services.scraper.items import NewsItem
@@ -28,6 +29,11 @@ class BaseNewsSpider(scrapy.Spider):
     list_css: str | list[str] = "a"
     next_page_css: str | None = None
     max_pages: int = 20  # guard against infinite pagination
+
+    # Smart date-based stopping: close spider after this many consecutive stale articles
+    MAX_CONSECUTIVE_OLD: int = 10
+    _cutoff: datetime = datetime.now(tz=timezone.utc) - timedelta(hours=72)
+    _consecutive_old: int = 0
 
     def start_requests(self) -> Generator:
         """Yield initial requests routed through ScraperAPI Middleware."""
@@ -74,6 +80,29 @@ class BaseNewsSpider(scrapy.Spider):
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement parse_article()"
         )
+
+    def _check_date_brake(self, published_at: datetime | None) -> None:
+        """
+        Smart stopping: raise CloseSpider if MAX_CONSECUTIVE_OLD stale articles
+        are seen in a row. Resets the counter when a fresh article is found.
+        """
+        if published_at is None:
+            # Unknown date – treat as fresh to avoid false positives
+            self._consecutive_old = 0
+            return
+
+        dt = published_at
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+
+        if dt < self._cutoff:
+            self._consecutive_old += 1
+            if self._consecutive_old >= self.MAX_CONSECUTIVE_OLD:
+                raise CloseSpider(
+                    f"Date brake: {self._consecutive_old} consecutive stale articles – stopping."
+                )
+        else:
+            self._consecutive_old = 0
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 

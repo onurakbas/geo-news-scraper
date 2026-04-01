@@ -15,19 +15,24 @@ class YeniKocaeliSpider(BaseNewsSpider):
     source_label = "Yeni Kocaeli"
     allowed_domains = ["yenikocaeli.com"]
     start_urls = [
+        # Homepage only – category archive pages cause 27-minute crawls
         "https://www.yenikocaeli.com/",
-        "https://www.yenikocaeli.com/gundem/",
-        "https://www.yenikocaeli.com/son-dakika/",
     ]
 
+    # Relaxed date brake: homepage mixes old and new articles so we need a higher tolerance
+    MAX_CONSECUTIVE_OLD: int = 20
+
+    # Focused selectors: main-feed headline links, a[href*='/haber/'] safe because no pagination
     list_css = [
         "div.news-list h2 a",
         "ul.haberler li h2 a",
-        "article h2 a",
-        "h3.entry-title a",
-        "a[href*='/haber/']",
+        "div.son-dakika h3 a",
+        "div.manset h2 a",
+        "div.haber-listesi h2 a",
+        "div.icerik-alani h2 a",
+        "a[href*='/haber/']",   # fallback – safe: pagination is disabled (next_page_css=None)
     ]
-    next_page_css = "a.next-page, a.next"
+    next_page_css = None  # No pagination – homepage only
 
     def parse_article(self, response: Response) -> NewsItem | None:  # type: ignore[override]
         title = self._extract_title(
@@ -52,5 +57,8 @@ class YeniKocaeliSpider(BaseNewsSpider):
             "time",
             "span.date",
         )
+
+        # Smart date-based stopping
+        self._check_date_brake(published_at)
 
         return self._build_item(response, title, content, published_at)

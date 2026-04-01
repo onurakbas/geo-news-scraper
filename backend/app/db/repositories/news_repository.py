@@ -169,7 +169,9 @@ async def get_map_markers(
     No pagination – the frontend handles clustering.
     """
     match = _build_match_stage(
-        date_from, date_to, type_filter, district, require_coordinates=True
+        date_from, date_to, type_filter, district,
+        require_coordinates=True,
+        only_valid_categories=False,  # Show ALL categories on map, not only the 5 mandatory
     )
     pipeline = _group_by_similarity_pipeline(match)
 

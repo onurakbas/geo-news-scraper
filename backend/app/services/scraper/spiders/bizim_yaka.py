@@ -53,4 +53,5 @@ class BizimYakaSpider(BaseNewsSpider):
             "span.post-date",
         )
 
+        self._check_date_brake(published_at)
         return self._build_item(response, title, content, published_at)
