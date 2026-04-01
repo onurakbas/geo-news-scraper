@@ -63,31 +63,39 @@ async def _reset_news_collection() -> None:
 
 
 async def _run_one_spider(name: str, script_path, repo_root) -> tuple[str, int, float]:
-    """Run a single spider subprocess; return (name, returncode, elapsed_secs)."""
+    """
+    Run a single spider in a thread via subprocess.run.
+    Using asyncio.to_thread instead of asyncio.create_subprocess_exec because
+    the latter raises NotImplementedError on Windows with SelectorEventLoop.
+    """
     import sys
+    import os
+    import subprocess
 
     t0 = time.monotonic()
     logger.info(f"🕷️  [{name}] → başladı")
 
-    proc = await asyncio.create_subprocess_exec(
-        sys.executable,
-        str(script_path),
-        name,
-        cwd=str(repo_root),
-        env={"PYTHONPATH": "backend"},
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
+    # Full env (includes PATH etc.) + override PYTHONPATH
+    env = {**os.environ, "PYTHONPATH": str(repo_root / "backend")}
+
+    def _run() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(script_path), name],
+            cwd=str(repo_root),
+            env=env,
+            capture_output=True,
+        )
+
+    result = await asyncio.to_thread(_run)
     elapsed = time.monotonic() - t0
 
-    if proc.returncode == 0:
+    if result.returncode == 0:
         logger.info(f"✅ [{name}] → tamamlandı ({elapsed:.0f}s / {elapsed/60:.1f}dk)")
     else:
-        err = stderr.decode()[-500:]
+        err = result.stderr.decode(errors="replace")[-500:]
         logger.error(f"💥 [{name}] → HATA ({elapsed:.0f}s)\n{err}")
 
-    return name, proc.returncode, elapsed
+    return name, result.returncode, elapsed
 
 
 async def _run_spiders_subprocess(spider_names: list[str]) -> None:
@@ -142,19 +150,23 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
         _state["last_run"] = datetime.now(tz=timezone.utc).isoformat()
         logger.info("🗺️  Geocoding başlatılıyor – koordinatlar hesaplanıyor...")
         try:
+            import os, subprocess
             geocode_script = repo_root / "scripts" / "run_geocode.py"
-            gproc = await asyncio.create_subprocess_exec(
-                sys.executable,
-                str(geocode_script),
-                cwd=str(repo_root),
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            gout, gerr = await gproc.communicate()
-            if gproc.returncode == 0:
-                logger.info(f"🗺️  Geocoding tamamlandı:\n{gout.decode()}")
+            geo_env = {**os.environ, "PYTHONPATH": str(repo_root / "backend")}
+
+            def _run_geocode():
+                return subprocess.run(
+                    [sys.executable, str(geocode_script)],
+                    cwd=str(repo_root),
+                    env=geo_env,
+                    capture_output=True,
+                )
+
+            gresult = await asyncio.to_thread(_run_geocode)
+            if gresult.returncode == 0:
+                logger.info(f"🗺️  Geocoding tamamlandı:\n{gresult.stdout.decode(errors='replace')}")
             else:
-                logger.warning(f"⚠️  Geocoding hata:\n{gerr.decode()[-500:]}")
+                logger.warning(f"⚠️  Geocoding hata:\n{gresult.stderr.decode(errors='replace')[-500:]}")
         except Exception as gexc:
             logger.warning(f"⚠️  Geocoding başlatılamadı: {repr(gexc)}")
 
