@@ -91,11 +91,29 @@ async def _run_one_spider(name: str, script_path, repo_root) -> tuple[str, int, 
 
     if result.returncode == 0:
         logger.info(f"✅ [{name}] → tamamlandı ({elapsed:.0f}s / {elapsed/60:.1f}dk)")
-        # Parse stderr for AntiBot/Timeout warnings even on success
+        # Anti-bot uyarılarını topla ve tek özetde bas (log spam önleme)
         stderr_text = result.stderr.decode(errors="replace")
+        antibot_lines: list[str] = []
+        http403_lines: list[str] = []
         for line in stderr_text.splitlines():
-            if any(x in line for x in ["[NETWORK ERROR]", "[BLOCKED", "[POTENTIAL BLOCK", "[ANTI-BOT DETECTED"]):
-                logger.warning(f"⚠️  [{name}] {line.strip()}")
+            if any(x in line for x in ["[ANTI-BOT DETECTED", "[BLOCKED", "[POTENTIAL BLOCK"]):
+                # URL'yi satırdan çıkar
+                url_part = line.split("→")[-1].strip() if "→" in line else line.strip()
+                antibot_lines.append(url_part)
+            elif "[HTTP 403]" in line or "[NETWORK ERROR]" in line:
+                url_part = line.split("→")[-1].strip() if "→" in line else line.strip()
+                http403_lines.append(url_part)
+        if antibot_lines:
+            first = antibot_lines[0][:80]
+            last  = antibot_lines[-1][:80] if len(antibot_lines) > 1 else None
+            summary = f"🛑 [{name}] {len(antibot_lines)} URL anti-bot tarafından engellendi"
+            if last:
+                summary += f"\n    İlk: {first}\n    Son:  {last}"
+            else:
+                summary += f"\n    URL: {first}"
+            logger.warning(summary)
+        if http403_lines:
+            logger.warning(f"🔒 [{name}] {len(http403_lines)} URL HTTP 403 aldı")
     else:
         err = result.stderr.decode(errors="replace")[-500:]
         logger.error(f"💥 [{name}] → HATA ({elapsed:.0f}s)\n{err}")

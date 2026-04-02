@@ -129,7 +129,7 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "orhantepe": "İzmit",
     "bağçeşme": "İzmit",
     "bagcesme": "İzmit",
-    "serdar": "İzmit",
+    # NOT: 'serdar' kaldırıldı — Türkçe'de yaygın kişi adı, false positive riski yüksek
     "kabaoğlu": "İzmit",
     "kabaoglu": "İzmit",
     "durhasan": "İzmit",
@@ -190,8 +190,7 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "köseköy": "Kartepe",
     "yeniköy": "Kartepe",
     "yenikoy": "Kartepe",
-    "İhsaniye": "Kartepe",
-    "ihsaniye": "Kartepe",
+    # NOT: İhsaniye Kartepe değil, Karamürsel ilçesine bağlıdır.
     # ── Başiskele ───────────────────────────────────────────────────────────
     "yuvacik": "Başiskele",
     "yuvacık": "Başiskele",
@@ -223,6 +222,8 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "tepekoy": "Karamürsel",
     "tepeköy": "Karamürsel",
     "karamürsel merkez": "Karamürsel",
+    "ihsaniye": "Karamürsel",
+    "İhsaniye": "Karamürsel",
     # ── Darıca ──────────────────────────────────────────────────────────────
     "bayramoglu": "Darıca",
     "bayramoğlu": "Darıca",
@@ -239,7 +240,7 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "tavşancıl": "Dilovası",
     "diliskelesi": "Dilovası",
     # ── Kandıra ─────────────────────────────────────────────────────────────
-    "kandira": "Kandıra",
+    # NOT: 'kandira' burada yok — Kandıra DISTRICT_ALIASES'da tanımlı (ilçe adı, mahalle değil)
     "kefken": "Kandıra",
     "kerpe": "Kandıra",
     "cebeci": "Kandıra",
@@ -266,6 +267,10 @@ POI_TO_LOCATION: dict[str, tuple[str, Optional[str]]] = {
     "gebze teknik universitesi": ("Gebze", "Gebze Teknik Üniversitesi"),
     "gebze teknik üniversitesi": ("Gebze", "Gebze Teknik Üniversitesi"),
     "gtu kampus": ("Gebze", "Gebze Teknik Üniversitesi"),
+    "gtu muzesi": ("Gebze", "Gebze Teknik Üniversitesi"),
+    "gtu muze": ("Gebze", "Gebze Teknik Üniversitesi"),
+    "kou umuttepe": ("İzmit", "Umuttepe"),
+    "kou kampusu": ("İzmit", "Umuttepe"),
     "izmit universitesi": ("İzmit", None),
 
     # ── Hastaneler ──────────────────────────────────────────────────────────
@@ -464,17 +469,26 @@ def _build_district_patterns() -> list[tuple[re.Pattern[str], str]]:
     ]
 
 
-def _build_neighbourhood_patterns() -> list[tuple[re.Pattern[str], str]]:
-    """Compile regex patterns for neighbourhood → district matching (longest first)."""
-    entries: dict[str, str] = {}
+def _build_neighbourhood_patterns() -> list[tuple[re.Pattern[str], str, str]]:
+    """Compile regex patterns for neighbourhood → district matching (longest first).
+    
+    Returns list of (pattern, district, canonical_neighbourhood_name).
+    canonical_neighbourhood_name is the properly capitalised Turkish form.
+    """
+    # Map normalised_key → (district, best_raw_key)
+    # "best" = the raw key with most Turkish characters (longest after normalise strip)
+    entries: dict[str, tuple[str, str]] = {}
     for raw_key, district in NEIGHBORHOOD_TO_DISTRICT.items():
-        entries[_normalise(raw_key)] = district
-        entries[raw_key.lower()] = district   # keep original Turkish too
+        norm = _normalise(raw_key)
+        existing = entries.get(norm)
+        # Prefer key with Turkish diacritics (it will be longer or equal in char count)
+        if not existing or len(raw_key) >= len(existing[1]):
+            entries[norm] = (district, raw_key)
 
     sorted_entries = sorted(entries.items(), key=lambda x: len(x[0]), reverse=True)
     return [
-        (re.compile(r"\b" + re.escape(k) + r"\b", re.IGNORECASE), v)
-        for k, v in sorted_entries
+        (re.compile(r"\b" + re.escape(k) + r"\b", re.IGNORECASE), dist, raw.title())
+        for k, (dist, raw) in sorted_entries
     ]
 
 
@@ -509,6 +523,27 @@ def _layer0_mahalle_context(title: str, content: str) -> tuple[Optional[str], Op
         match = _MAHALLE_PATTERN.search(text)
         if match:
             neighbourhood = match.group(1).strip()
+
+            # "Kartepe İstasyon Mahallesi" → ilk kelime ilçe adıysa strip et
+            # Neighbourhood = "İstasyon", district = "Kartepe"
+            words = neighbourhood.split()
+            if len(words) >= 2:
+                first_word_norm = _normalise(words[0])
+                if first_word_norm in DISTRICT_ALIASES or any(
+                    _normalise(d) == first_word_norm for d in KOCAELI_DISTRICTS
+                ):
+                    # İlk kelime ilçe adı → onu district olarak kullan, geri kalanı neighbourhood
+                    inferred_district = DISTRICT_ALIASES.get(first_word_norm) or next(
+                        (d for d in KOCAELI_DISTRICTS if _normalise(d) == first_word_norm), None
+                    )
+                    neighbourhood = " ".join(words[1:])
+                    district = inferred_district or _lookup_in_dictionaries(neighbourhood)
+                    logger.debug(
+                        f"[extractor] Layer 0 hit (district-prefix stripped): "
+                        f"'{neighbourhood}' Mahallesi → district={district}"
+                    )
+                    return neighbourhood, district
+
             district = _lookup_in_dictionaries(neighbourhood)
             logger.debug(f"[extractor] Layer 0 hit: '{neighbourhood}' Mahallesi → district={district}")
             return neighbourhood, district
@@ -535,18 +570,27 @@ def _layer05_poi(combined_norm: str) -> tuple[Optional[str], Optional[str]]:
     return None, None
 
 
-def _layer1_dictionary(combined_norm: str, combined_raw: str) -> list[str]:
-    """Neighbourhood + district regex scan over normalised + raw text."""
+def _layer1_dictionary(combined_norm: str, combined_raw: str) -> tuple[list[str], Optional[str]]:
+    """Neighbourhood + district regex scan over normalised + raw text.
+    
+    Returns (districts_list, first_neighbourhood_canonical_name).
+    """
     matched: list[str] = []
     seen: set[str] = set()
+    first_neighbourhood: Optional[str] = None
 
-    for pattern, district in _NEIGHBOURHOOD_PATTERNS:
-        if pattern.search(combined_raw) or pattern.search(combined_norm):
+    for pattern, district, canonical in _NEIGHBOURHOOD_PATTERNS:
+        m = pattern.search(combined_norm)
+        if m:
             if district not in seen:
                 matched.append(district)
                 seen.add(district)
+            # Use the pre-built canonical name (e.g. "Değirmendere", "Maşukiye")
+            # Minimum 5 chars to avoid short person-name false positives
+            if first_neighbourhood is None and len(canonical) >= 5:
+                first_neighbourhood = canonical
 
-    return matched
+    return matched, first_neighbourhood
 
 
 def _layer2_spacy(combined_raw: str) -> list[str]:
@@ -623,7 +667,10 @@ def extract_locations(title: str, content: str) -> dict[str, object]:
 
     # Layer 1: neighbourhood / place-level dictionary
     if not results:
-        results = _layer1_dictionary(combined_norm, combined_raw)
+        results, l1_neighbourhood = _layer1_dictionary(combined_norm, combined_raw)
+        # Use Layer 1 neighbourhood hint if Layer 0 found nothing
+        if l1_neighbourhood and not neighbourhood:
+            neighbourhood = l1_neighbourhood
 
     # Layer 2: spaCy NER (adds entities not caught by sözlük)
     if not results:
