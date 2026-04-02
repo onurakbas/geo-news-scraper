@@ -239,11 +239,170 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "tavşancıl": "Dilovası",
     "diliskelesi": "Dilovası",
     # ── Kandıra ─────────────────────────────────────────────────────────────
+    "kandira": "Kandıra",
     "kefken": "Kandıra",
     "kerpe": "Kandıra",
     "cebeci": "Kandıra",
     "babali": "Kandıra",
     "babalı": "Kandıra",
+}
+
+
+# ── POI (Points of Interest) → district/neighborhood mapping ──────────────────
+# Bilindik kurumlar, yapılar ve mekanlar — TAM İSİM eşleşmesi yapılır,
+# yanlış pozitif riskini minimize etmek için minimum ~10 karakter uzunluğunda
+# ve Kocaeli'ye özgü isimler seçilmiştir.
+
+POI_TO_LOCATION: dict[str, tuple[str, Optional[str]]] = {
+    # Değer: (district, neighborhood_for_geocoder)
+    # neighborhood=None → sadece ilçe hassasiyetinde koordinat
+
+    # ── Üniversiteler ───────────────────────────────────────────────────────
+    "kocaeli universitesi": ("İzmit", "Umuttepe"),
+    "kocaeli üniversitesi": ("İzmit", "Umuttepe"),
+    "kou kampus": ("İzmit", "Umuttepe"),
+    "umuttepe kampus": ("İzmit", "Umuttepe"),
+    "umuttepe kampüs": ("İzmit", "Umuttepe"),
+    "gebze teknik universitesi": ("Gebze", "Gebze Teknik Üniversitesi"),
+    "gebze teknik üniversitesi": ("Gebze", "Gebze Teknik Üniversitesi"),
+    "gtu kampus": ("Gebze", "Gebze Teknik Üniversitesi"),
+    "izmit universitesi": ("İzmit", None),
+
+    # ── Hastaneler ──────────────────────────────────────────────────────────
+    "kocaeli devlet hastanesi": ("İzmit", None),
+    "kocaeli egitim arastirma hastanesi": ("İzmit", None),
+    "kocaeli eğitim araştırma hastanesi": ("İzmit", None),
+    "izmit devlet hastanesi": ("İzmit", None),
+    "gebze fatih devlet hastanesi": ("Gebze", None),
+    "gebze devlet hastanesi": ("Gebze", None),
+    "golcuk devlet hastanesi": ("Gölcük", None),
+    "gölcük devlet hastanesi": ("Gölcük", None),
+    "darıca farabi hastanesi": ("Darıca", None),
+    "darica farabi hastanesi": ("Darıca", None),
+    "kartepe devlet hastanesi": ("Kartepe", None),
+    "kandıra devlet hastanesi": ("Kandıra", None),
+    "kandira devlet hastanesi": ("Kandıra", None),
+    "karamürsel devlet hastanesi": ("Karamürsel", None),
+    "karamursel devlet hastanesi": ("Karamürsel", None),
+    "derince egitim arastirma hastanesi": ("Derince", None),
+    "derince eğitim araştırma hastanesi": ("Derince", None),
+    "değirmendere devlet hastanesi": ("Gölcük", "Değirmendere"),
+    "degirmendere devlet hastanesi": ("Gölcük", "Değirmendere"),
+    "körfez devlet hastanesi": ("Körfez", None),
+    "korfez devlet hastanesi": ("Körfez", None),
+    "kocaeli sehir hastanesi": ("Başiskele", None),
+    "kocaeli şehir hastanesi": ("Başiskele", None),
+
+    # ── Stadlar & Spor Tesisleri ────────────────────────────────────────────
+    "kocaeli stadyumu": ("İzmit", None),
+    "izmit stadyumu": ("İzmit", None),
+    "seka stadyumu": ("İzmit", None),
+    "kocaelispor stadyumu": ("İzmit", None),
+    "körfez spor merkezi": ("Körfez", None),
+    "korfez spor merkezi": ("Körfez", None),
+    "gebze spor tesisi": ("Gebze", None),
+    "darıca spor merkezi": ("Darıca", None),
+    "darica spor merkezi": ("Darıca", None),
+
+    # ── Alışveriş Merkezleri ────────────────────────────────────────────────
+    "izmit aqua": ("İzmit", None),
+    "aqua kocaeli": ("İzmit", None),
+    "izmit park avm": ("İzmit", None),
+    "gebze center": ("Gebze", None),
+    "gebze plaza": ("Gebze", None),
+    "migros kocaeli": ("İzmit", None),
+    "carrefour kocaeli": ("İzmit", None),
+
+    # ── Camiler ─────────────────────────────────────────────────────────────
+    "sabanci camii kocaeli": ("İzmit", None),
+    "sabancı camii kocaeli": ("İzmit", None),
+    "pertevniyal camii": ("İzmit", None),
+    "hereke camii": ("Körfez", "Hereke"),
+    "yahyakaptan camii": ("İzmit", "Yahyakaptan"),
+    "maşukiye camii": ("Kartepe", "Maşukiye"),
+    "masukiye camii": ("Kartepe", "Maşukiye"),
+    "gebze merkez camii": ("Gebze", None),
+    "golcuk camii": ("Gölcük", None),
+    "gölcük camii": ("Gölcük", None),
+
+    # ── Parklar & Sahiller ──────────────────────────────────────────────────
+    "seka park": ("İzmit", "Seka Park"),
+    "kocaeli millet bahcesi": ("İzmit", None),
+    "kocaeli millet bahçesi": ("İzmit", None),
+    "izmit kordon": ("İzmit", None),
+    "korfez sahili": ("Körfez", None),
+    "körfez sahili": ("Körfez", None),
+    "golcuk sahili": ("Gölcük", None),
+    "gölcük sahili": ("Gölcük", None),
+    "harikalar sahili": ("Derince", None),
+    "karamursel sahili": ("Karamürsel", None),
+    "karamürsel sahili": ("Karamürsel", None),
+    "hereke sahili": ("Körfez", "Hereke"),
+    "masukiye tabiat parki": ("Kartepe", "Maşukiye"),
+    "maşukiye tabiat parkı": ("Kartepe", "Maşukiye"),
+    "korfez belediye parki": ("Körfez", None),
+
+    # ── Organize Sanayi Bölgeleri ───────────────────────────────────────────
+    "losb": ("Dilovası", None),
+    "kosbi": ("Gebze", None),
+    "gebze osb": ("Gebze", None),
+    "izmit osb": ("İzmit", None),
+    "tuzla osb": ("Gebze", None),
+    "körfez osb": ("Körfez", None),
+    "korfez osb": ("Körfez", None),
+    "cayirova osb": ("Çayırova", None),
+    "çayırova osb": ("Çayırova", None),
+
+    # ── Okullar (bilindik ve özgün isimler) ────────────────────────────────
+    "izmit anadolu lisesi": ("İzmit", None),
+    "kocaeli anadolu lisesi": ("İzmit", None),
+    "gebze anadolu lisesi": ("Gebze", None),
+    "darıca anadolu lisesi": ("Darıca", None),
+    "darica anadolu lisesi": ("Darıca", None),
+    "gölcük anadolu lisesi": ("Gölcük", None),
+    "golcuk anadolu lisesi": ("Gölcük", None),
+    "kartepe anadolu lisesi": ("Kartepe", None),
+    "karamursel anadolu lisesi": ("Karamürsel", None),
+    "karamürsel anadolu lisesi": ("Karamürsel", None),
+    "hereke anadolu lisesi": ("Körfez", "Hereke"),
+
+    # ── Diğer Önemli Noktalar ───────────────────────────────────────────────
+    "kocaeli buyuksehir belediyesi": ("İzmit", None),
+    "kocaeli büyükşehir belediyesi": ("İzmit", None),
+    "izmit belediyesi": ("İzmit", None),
+    "gebze belediyesi": ("Gebze", None),
+    "golcuk belediyesi": ("Gölcük", None),
+    "gölcük belediyesi": ("Gölcük", None),
+    "darıca belediyesi": ("Darıca", None),
+    "darica belediyesi": ("Darıca", None),
+    "kartepe belediyesi": ("Kartepe", None),
+    "korfez belediyesi": ("Körfez", None),
+    "körfez belediyesi": ("Körfez", None),
+    "derince belediyesi": ("Derince", None),
+    "basciskele belediyesi": ("Başiskele", None),
+    "başiskele belediyesi": ("Başiskele", None),
+    "cayirova belediyesi": ("Çayırova", None),
+    "çayırova belediyesi": ("Çayırova", None),
+    "kandira belediyesi": ("Kandıra", None),
+    "kandıra belediyesi": ("Kandıra", None),
+    "karamursel belediyesi": ("Karamürsel", None),
+    "karamürsel belediyesi": ("Karamürsel", None),
+    "dilovasi belediyesi": ("Dilovası", None),
+    "dilovası belediyesi": ("Dilovası", None),
+    "kocaeli emniyet mudurlugu": ("İzmit", None),
+    "kocaeli emniyet müdürlüğü": ("İzmit", None),
+    "kocaeli valiligi": ("İzmit", None),
+    "kocaeli valiliği": ("İzmit", None),
+    "izmit adliyesi": ("İzmit", None),
+    "kocaeli adliyesi": ("İzmit", None),
+    "gebze adliyesi": ("Gebze", None),
+    "yuvacik baraji": ("Başiskele", "Yuvacık"),
+    "yuvacık barajı": ("Başiskele", "Yuvacık"),
+    "izmit korfezi": ("İzmit", None),
+    "izmit körfezi": ("İzmit", None),
+    "tübitak marmara arastirma merkezi": ("Gebze", None),
+    "tübitak marmara araştırma merkezi": ("Gebze", None),
+    "tubitak marmara arastirma merkezi": ("Gebze", None),
 }
 
 
@@ -323,6 +482,16 @@ def _build_neighbourhood_patterns() -> list[tuple[re.Pattern[str], str]]:
 _DISTRICT_PATTERNS = _build_district_patterns()
 _NEIGHBOURHOOD_PATTERNS = _build_neighbourhood_patterns()
 
+# POI patterns: sorted longest first to prefer most specific match
+_POI_PATTERNS: list[tuple[re.Pattern[str], tuple[str, Optional[str]]]] = sorted(
+    [
+        (re.compile(r"\b" + re.escape(_normalise(k)) + r"\b", re.IGNORECASE), v)
+        for k, v in POI_TO_LOCATION.items()
+    ],
+    key=lambda x: len(x[0].pattern),
+    reverse=True,
+)
+
 
 # ── Layer implementations ─────────────────────────────────────────────────────
 
@@ -343,6 +512,26 @@ def _layer0_mahalle_context(title: str, content: str) -> tuple[Optional[str], Op
             district = _lookup_in_dictionaries(neighbourhood)
             logger.debug(f"[extractor] Layer 0 hit: '{neighbourhood}' Mahallesi → district={district}")
             return neighbourhood, district
+    return None, None
+
+
+def _layer05_poi(combined_norm: str) -> tuple[Optional[str], Optional[str]]:
+    """
+    Layer 0.5: Scan for known Kocaeli POI names (hospitals, universities,
+    mosques, parks, malls, stadiums, schools, municipal buildings...).
+
+    Uses normalised (diacritic-free) text for matching.
+    Patterns sorted longest-first to prefer most specific hit.
+
+    Returns (district, neighborhood_hint) or (None, None).
+    """
+    for pattern, (district, neighborhood) in _POI_PATTERNS:
+        if pattern.search(combined_norm):
+            logger.debug(
+                f"[extractor] Layer 0.5 POI hit: '{pattern.pattern}' "
+                f"→ district={district}, neighborhood={neighborhood}"
+            )
+            return district, neighborhood
     return None, None
 
 
@@ -417,10 +606,20 @@ def extract_locations(title: str, content: str) -> dict[str, object]:
     combined_norm = _normalise(combined_raw)
 
     neighbourhood: Optional[str] = None
+    poi_neighborhood: Optional[str] = None
 
     # Layer 0: "[Name] Mahallesi" context – highest precision
     neighbourhood, l0_district = _layer0_mahalle_context(title, content)
     results: list[str] = [l0_district] if l0_district else []
+
+    # Layer 0.5: POI dictionary (hospitals, universities, mosques etc.)
+    if not results:
+        poi_district, poi_neighborhood = _layer05_poi(combined_norm)
+        if poi_district:
+            results = [poi_district]
+            # POI neighborhood hint (e.g. "Maşukiye" for Kartepe hospital)
+            if poi_neighborhood and not neighbourhood:
+                neighbourhood = poi_neighborhood
 
     # Layer 1: neighbourhood / place-level dictionary
     if not results:

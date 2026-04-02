@@ -26,11 +26,21 @@ const emojiOf = (type: string): string =>
 
 const timeAgo = (d?: string) => {
   if (!d) return '';
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  const m = Math.floor((Date.now() - parseUTC(d)) / 60000);
   if (m < 60) return `${m} dk önce`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} saat önce`;
   return `${Math.floor(h / 24)} gün önce`;
+};
+
+/** API tarihleri timezone bilgisi olmadan geliyor ("2026-04-02T18:37:00").
+ *  Sonuna 'Z' ekleyerek UTC olarak parse ediyoruz. */
+const parseUTC = (s: string): number => {
+  if (!s) return 0;
+  // Zaten timezone bilgisi varsa (Z veya +XX:XX) olduğu gibi parse et
+  if (s.endsWith('Z') || s.includes('+')) return new Date(s).getTime();
+  // Yoksa UTC olarak işaretle
+  return new Date(s + 'Z').getTime();
 };
 
 /* ─── Shared inline style tokens ─────────────────────────── */
@@ -145,7 +155,8 @@ export default function MapPage() {
 
       if (msLimit > 0) {
         // published_at yoksa tarihi bilinmiyor → zaman filtresinden geçirme
-        r = r.filter(m => m.published_at && (now - new Date(m.published_at).getTime()) <= msLimit);
+        // parseUTC ile timezone-naive stringleri doğru UTC olarak yorumluyoruz
+        r = r.filter(m => m.published_at && (now - parseUTC(m.published_at)) <= msLimit);
       }
     }
 

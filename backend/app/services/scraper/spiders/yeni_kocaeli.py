@@ -35,6 +35,12 @@ class YeniKocaeliSpider(BaseNewsSpider):
     next_page_css = None  # No pagination – homepage only
 
     def parse_article(self, response: Response) -> NewsItem | None:  # type: ignore[override]
+        # Sadece gerçek haber URL'lerini işle: /haber/<sayisal-id>/<baslik> formatı
+        # /haber/cedit%20mahallesi.html gibi tag/arama sayfalarını atla
+        import re
+        if not re.search(r'/haber/\d+/', response.url):
+            return None
+
         title = self._extract_title(
             response,
             "h1.haber-baslik::text",
