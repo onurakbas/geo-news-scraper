@@ -32,7 +32,7 @@ def _build_match_stage(
     type_filter: Optional[str],
     district: Optional[str],
     require_coordinates: bool = False,
-    only_valid_categories: bool = True,
+    only_valid_categories: bool = False,
 ) -> dict[str, Any]:
     """Build the $match stage dict for aggregation or find queries."""
     match: dict[str, Any] = {}
@@ -99,6 +99,7 @@ def _group_by_similarity_pipeline(match: dict[str, Any]) -> list[dict]:
                 "published_at": {"$first": "$published_at"},
                 "type":         {"$first": "$type"},
                 "district":     {"$first": "$district"},
+                "neighborhood": {"$first": "$neighborhood"},
                 "city":         {"$first": "$city"},
                 "coordinates":  {"$first": "$coordinates"},
                 "similarity_group_id": {"$first": "$similarity_group_id"},
@@ -114,6 +115,7 @@ def _group_by_similarity_pipeline(match: dict[str, Any]) -> list[dict]:
                 "published_at":      1,
                 "type":              1,
                 "district":          1,
+                "neighborhood":      1,
                 "city":              1,
                 "coordinates":       1,
                 "similarity_group_id": 1,

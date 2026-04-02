@@ -106,8 +106,11 @@ export default function MapPage() {
 
   /* filter */
   useEffect(() => {
-    // 1. Kategori (Type) Filtrelemesi
-    let r = allMarkers.filter(m => activeTypes.has(m.type as EventType));
+    // 1. Kategori (Type) Filtrelemesi – type null/undefined ise "Diğer" say
+    let r = allMarkers.filter(m => {
+      const t = (m.type ?? 'Diğer') as EventType;
+      return activeTypes.has(t);
+    });
 
     // 2. İlçe Filtrelemesi
     if (district !== 'Tüm İlçeler') {
@@ -141,6 +144,7 @@ export default function MapPage() {
       else if (timeRange === 'Son 1 Hafta') msLimit = 7 * 24 * 60 * 60 * 1000;
 
       if (msLimit > 0) {
+        // published_at yoksa tarihi bilinmiyor → zaman filtresinden geçirme
         r = r.filter(m => m.published_at && (now - new Date(m.published_at).getTime()) <= msLimit);
       }
     }

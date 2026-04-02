@@ -91,6 +91,11 @@ async def _run_one_spider(name: str, script_path, repo_root) -> tuple[str, int, 
 
     if result.returncode == 0:
         logger.info(f"✅ [{name}] → tamamlandı ({elapsed:.0f}s / {elapsed/60:.1f}dk)")
+        # Parse stderr for AntiBot/Timeout warnings even on success
+        stderr_text = result.stderr.decode(errors="replace")
+        for line in stderr_text.splitlines():
+            if any(x in line for x in ["[NETWORK ERROR]", "[BLOCKED", "[POTENTIAL BLOCK", "[ANTI-BOT DETECTED"]):
+                logger.warning(f"⚠️  [{name}] {line.strip()}")
     else:
         err = result.stderr.decode(errors="replace")[-500:]
         logger.error(f"💥 [{name}] → HATA ({elapsed:.0f}s)\n{err}")
@@ -183,38 +188,57 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
 
             total         = col.count_documents({})
             with_coords   = col.count_documents({"coordinates": {"$ne": None}})
-            map_visible   = col.count_documents({"coordinates": {"$ne": None}, "type": {"$in": list(VALID_CATS)}})
+            with_hood     = col.count_documents({"neighborhood": {"$ne": None, "$exists": True}})
+            coords_no_date = col.count_documents({"coordinates": {"$ne": None}, "published_at": None})
             cat_counts    = list(col.aggregate([
-                {"$group": {"_id": "$type", "count": {"$sum": 1}}},
+                {"$group": {
+                    "_id": "$type",
+                    "count": {"$sum": 1},
+                    "with_coords": {"$sum": {"$cond": [{"$ne": ["$coordinates", None]}, 1, 0]}}
+                }},
                 {"$sort": {"count": -1}},
             ]))
             src_counts    = list(col.aggregate([
                 {"$group": {"_id": "$source", "count": {"$sum": 1}}},
                 {"$sort": {"count": -1}},
             ]))
+
+            # Mahalleli haberleri al (log için)
+            hood_docs = list(col.find(
+                {"neighborhood": {"$ne": None, "$exists": True}},
+                {"title": 1, "district": 1, "neighborhood": 1, "coordinates": 1}
+            ))
             cli.close()
 
-            db_lines = [f"\n── DB Summary {'─'*40}"]
-            db_lines.append(f"  Toplam haber      : {total}")
-            db_lines.append(f"  Koordinatlı       : {with_coords}  ({100*with_coords//total if total else 0}%)")
-            db_lines.append(f"  Koordinatsız      : {total - with_coords}")
-            db_lines.append(f"  Haritada görünür  : {map_visible}  (koordinat + zorunlu kategori)")
-            db_lines.append(f"  Haritada görünmez : {with_coords - map_visible}  (koordinat var ama 'Diğer' kategorisi)")
-            db_lines.append(f"  {'─'*52}")
-            db_lines.append(f"  {'Kaynak (Site)':<24} {'Adet':>4}")
-            db_lines.append(f"  {'─'*30}")
+            db_lines = [f"\n── DB Summary {'─'*48}"]
+            db_lines.append(f"  Toplam haber           : {total}")
+            db_lines.append(f"  Koordinatlı            : {with_coords}  ({100*with_coords//total if total else 0}%)")
+            db_lines.append(f"    ├─ Tarihi olan        : {with_coords - coords_no_date}  ← frontenda görünür")
+            db_lines.append(f"    └─ Tarihi YOK         : {coords_no_date}  ← frontenda görünmez (tarih filtresi)")
+            db_lines.append(f"  Koordinatsız           : {total - with_coords}")
+            db_lines.append(f"  Mahalle tespiti        : {with_hood}")
+            db_lines.append(f"  {'─'*48}")
+            db_lines.append(f"  {'Kaynak (Site)':<24} {'Toplam':>8}")
+            db_lines.append(f"  {'─'*48}")
             for row in src_counts:
-                db_lines.append(f"  {(row['_id'] or '?'):<24} {row['count']:>4}")
-            db_lines.append(f"  {'─'*52}")
-            db_lines.append(f"  {'Kategori':<28} {'Adet':>4}   Bar  (🗺️=haritaya yansır)")
-            db_lines.append(f"  {'─'*52}")
+                db_lines.append(f"  {(row['_id'] or '?'):<24} {row['count']:>8}")
+            db_lines.append(f"  {'─'*48}")
+            db_lines.append(f"  {'Kategori':<28} {'Toplam':>6}  {'Koordinatlı':>11}")
+            db_lines.append(f"  {'─'*48}")
             for row in cat_counts:
-                cat      = row["_id"] or "Bilinmiyor"
-                cnt      = row["count"]
-                pct      = 100 * cnt // total if total else 0
-                bar      = "█" * (cnt * 20 // (total or 1))
-                on_map   = " 🗺️" if cat in VALID_CATS else ""
-                db_lines.append(f"  {cat:<28} {cnt:>4}  ({pct:>2}%) {bar}{on_map}")
+                cat    = row["_id"] or "Bilinmiyor"
+                cnt    = row["count"]
+                coords = row["with_coords"]
+                db_lines.append(f"  {cat:<28} {cnt:>6}  {coords:>11}")
+            if hood_docs:
+                db_lines.append(f"  {'─'*48}")
+                db_lines.append(f"  Mahalle hassasiyetli koordinatlı haberler:")
+                for d in hood_docs:
+                    has_coord = "✅" if d.get("coordinates") else "❌"
+                    dist = str(d.get("district") or "-")
+                    hood = str(d.get("neighborhood") or "-")
+                    title = str(d.get("title") or "")[:55]
+                    db_lines.append(f"    {has_coord} {dist} / {hood} → {title}")
             db_lines.append(f"{'─'*55}\n")
             logger.info("\n".join(db_lines))
         except Exception as sexc:

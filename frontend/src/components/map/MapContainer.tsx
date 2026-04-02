@@ -198,7 +198,9 @@ function SentinelPopup({ marker, onClose }: PopupProps) {
           {/* Meta */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
             {row('📅', date)}
-            {marker.district && row('📍', marker.district)}
+            {(marker.district || marker.neighborhood) && row('📍',
+              [marker.neighborhood, marker.district].filter(Boolean).join(', ')
+            )}
             {(marker.sources ?? []).length > 0 && row('📰', (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 Kaynaklar:
@@ -288,9 +290,12 @@ const MapContainer = ({ markers }: Props) => {
       {Array.isArray(markers) && markers.map((m, index) => {
         if (typeof m.lat !== 'number' || typeof m.lon !== 'number') return null;
 
-        // Çakışmayı önlemek için küçük bir sapma (Jittering) ekleyelim
-        const jitterLat = m.lat + (Math.sin(index) * 0.00015);
-        const jitterLon = m.lon + (Math.cos(index) * 0.00015);
+        // Çakışmayı önlemek için belirgin bir dairesel sapma (Jittering) ekleyelim
+        // 0.00015 değeri zoom 11'de 1 pikselden küçüktü, bu yüzden üst üste biniyordu.
+        // Daha geniş bir radius kullanarak pinlerin etrafa yayılmasını sağlıyoruz.
+        const radius = 0.004 + ((index % 3) * 0.002);
+        const jitterLat = m.lat + (Math.sin(index * 2.4) * radius);
+        const jitterLon = m.lon + (Math.cos(index * 2.4) * radius);
 
         return (
           <NewsPin

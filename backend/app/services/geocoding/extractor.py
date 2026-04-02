@@ -1,11 +1,19 @@
 """
 Location extractor for news articles – Hybrid NER + Dictionary approach.
 
-Strategy (3 layers, applied in order):
+Strategy (4 layers, applied in order):
+
+  Layer 0 – "X Mahallesi/Mah." context regex (NEW):
+    Scans text for the pattern "[Name] Mahallesi/Mah./Mh." and extracts the
+    neighbourhood name verbatim. This is the most precise layer and gets
+    absolute priority. No risk of false positives since "Mahalle" suffix is
+    required. The neighbourhood name is passed to the geocoder separately.
 
   Layer 1 – Neighbourhood / place-level dictionary:
     Known Kocaeli neighbourhoods, campuses, streets etc. are mapped to their
-    parent district.  This is the most precise layer and gets first priority.
+    parent district. Only *distinctive* place names are included here — common
+    Turkish words (emek, özgürlük…) are NOT added and must be caught via
+    Layer 0 (with the "Mahalle" context).
 
   Layer 2 – spaCy multilingual NER (xx_ent_wiki_sm):
     LOC / GPE entities detected by the model are normalised and looked up in
@@ -13,14 +21,15 @@ Strategy (3 layers, applied in order):
 
   Layer 3 – District alias regex fallback:
     A regex scan over the 12 canonical district names and their common
-    alternative spellings.  Runs when layers 1+2 find nothing.
+    alternative spellings. Runs when layers 0-2 find nothing.
 
 Graceful degradation: if spaCy or its model is unavailable the module falls
-back silently to layers 1 and 3 only.
+back silently to layers 0, 1 and 3 only.
 
 Returns:
-  - district  : normalised district name (first / best match)
-  - locations : deduplicated list of all matched place strings
+  - district      : normalised district name (first / best match)
+  - neighborhood  : most specific place found (from Layer 0), or None
+  - locations     : deduplicated list of all matched districts
 """
 
 from __future__ import annotations
@@ -89,19 +98,45 @@ DISTRICT_ALIASES: dict[str, str] = {
 }
 
 # ── Neighbourhood / place → district mapping ──────────────────────────────────
+# NOTE: Only add *distinctive* place names here (≥8 chars, not common Turkish words).
+# Ambiguous short names (emek, özgürlük, akse…) must be caught via Layer 0
+# (the "[Name] Mahallesi" context pattern) to avoid false positives.
 
 NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
-    # İzmit
+    # ── İzmit ──────────────────────────────────────────────────────────────
     "yahyakaptan": "İzmit",
     "yenidogan": "İzmit",
+    "yenidoğan": "İzmit",
     "seka park": "İzmit",
     "plajyolu": "İzmit",
     "fethiye caddesi": "İzmit",
     "yuruyus yolu": "İzmit",
     "kurucesme": "İzmit",
+    "kuruçeşme": "İzmit",
     "alikahya": "İzmit",
     "kozluk": "İzmit",
-    # Gebze
+    "tepecik": "İzmit",
+    "tavşantepe": "İzmit",
+    "tavşantepe": "İzmit",
+    "çukurbey": "İzmit",
+    "cukurbey": "İzmit",
+    "yeşilova": "İzmit",
+    "yesilova": "İzmit",
+    "gundogdu": "İzmit",
+    "gündoğdu": "İzmit",
+    "topçular": "İzmit",
+    "topcular": "İzmit",
+    "orhantepe": "İzmit",
+    "bağçeşme": "İzmit",
+    "bagcesme": "İzmit",
+    "serdar": "İzmit",
+    "kabaoğlu": "İzmit",
+    "kabaoglu": "İzmit",
+    "durhasan": "İzmit",
+    "aziziye": "İzmit",
+    "arızlı": "İzmit",
+    "arizli": "İzmit",
+    # ── Gebze ───────────────────────────────────────────────────────────────
     "mutlukent": "Gebze",
     "tubitak": "Gebze",
     "tübitak": "Gebze",
@@ -113,7 +148,14 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "tatlıkuyu": "Gebze",
     "arapcesme": "Gebze",
     "arapçeşme": "Gebze",
-    # Derince
+    "pelitli": "Gebze",
+    "sultanorhan": "Gebze",
+    "güzeller": "Gebze",
+    "guzeller": "Gebze",
+    "deri osb": "Gebze",
+    "bağarası": "Gebze",
+    "bagarasi": "Gebze",
+    # ── Derince ─────────────────────────────────────────────────────────────
     "yenikent": "Derince",
     "cenedag": "Derince",
     "çenedağ": "Derince",
@@ -121,8 +163,10 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "sırrıpaşa": "Derince",
     "harikalar sahili": "Derince",
     "60 evler": "Derince",
-    "yavuz sultan": "Derince",
-    # Körfez
+    "tavşanlı": "Derince",
+    "tavsanli": "Derince",
+    "esadiye": "Derince",
+    # ── Körfez ──────────────────────────────────────────────────────────────
     "yarimca": "Körfez",
     "yarımca": "Körfez",
     "tutunciftlik": "Körfez",
@@ -130,7 +174,11 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "hereke": "Körfez",
     "sirinyali": "Körfez",
     "şirinyalı": "Körfez",
-    # Kartepe
+    "kullar": "Körfez",
+    "rahmiye": "Körfez",
+    "subaşı": "Körfez",
+    "subasi": "Körfez",
+    # ── Kartepe ─────────────────────────────────────────────────────────────
     "masukiye": "Kartepe",
     "maşukiye": "Kartepe",
     "derbent": "Kartepe",
@@ -140,17 +188,23 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "uzunçiftlik": "Kartepe",
     "kosekoy": "Kartepe",
     "köseköy": "Kartepe",
-    # Başiskele
+    "yeniköy": "Kartepe",
+    "yenikoy": "Kartepe",
+    "İhsaniye": "Kartepe",
+    "ihsaniye": "Kartepe",
+    # ── Başiskele ───────────────────────────────────────────────────────────
     "yuvacik": "Başiskele",
     "yuvacık": "Başiskele",
     "bahcecik": "Başiskele",
     "bahçecik": "Başiskele",
-    "kullar": "Başiskele",
     "karsiyaka": "Başiskele",
     "karşıyaka": "Başiskele",
-    "yenikoy": "Başiskele",
-    "yeniköy": "Başiskele",
-    # Gölcük
+    "başiskele merkez": "Başiskele",
+    "körkuyu": "Başiskele",
+    "korkuyu": "Başiskele",
+    "ovacık": "Başiskele",
+    "ovacik": "Başiskele",
+    # ── Gölcük ──────────────────────────────────────────────────────────────
     "degirmendere": "Gölcük",
     "değirmendere": "Gölcük",
     "halidere": "Gölcük",
@@ -158,41 +212,53 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "ulaşlı": "Gölcük",
     "kavakli": "Gölcük",
     "kavaklı": "Gölcük",
-    "ihsaniye": "Gölcük",
-    "ihsaniye": "Gölcük",
-    # Karamürsel
-    "eregli": "Karamürsel",
-    "ereğli": "Karamürsel",
+    "nenehatun": "Gölcük",
+    "yazlık": "Gölcük",
+    "yazlik": "Gölcük",
+    # ── Karamürsel ──────────────────────────────────────────────────────────
+    "herşik": "Karamürsel",
+    "hersik": "Karamürsel",
     "altinkemer": "Karamürsel",
     "altınkemer": "Karamürsel",
     "tepekoy": "Karamürsel",
     "tepeköy": "Karamürsel",
-    # Darıca
+    "karamürsel merkez": "Karamürsel",
+    # ── Darıca ──────────────────────────────────────────────────────────────
     "bayramoglu": "Darıca",
     "bayramoğlu": "Darıca",
-    "emek": "Darıca",
     "osmangazi": "Darıca",
-    "nenehatun": "Darıca",
-    # Çayırova
+    # ── Çayırova ────────────────────────────────────────────────────────────
     "sekerpinar": "Çayırova",
     "şekerpınar": "Çayırova",
-    "akse": "Çayırova",
-    "ozgurluk": "Çayırova",
-    "özgürlük": "Çayırova",
-    # Dilovası
+    "çayırova merkez": "Çayırova",
+    # ── Dilovası ────────────────────────────────────────────────────────────
     "mermerciler": "Dilovası",
     "komurculer": "Dilovası",
     "kömürcüler": "Dilovası",
     "tavsancil": "Dilovası",
     "tavşancıl": "Dilovası",
     "diliskelesi": "Dilovası",
-    # Kandıra
+    # ── Kandıra ─────────────────────────────────────────────────────────────
     "kefken": "Kandıra",
     "kerpe": "Kandıra",
     "cebeci": "Kandıra",
     "babali": "Kandıra",
     "babalı": "Kandıra",
 }
+
+
+# ── Layer 0: "X Mahallesi/Mah." pattern ──────────────────────────────────────
+# Catches any mention of a neighbourhood when followed by "Mahalle" context.
+# Rules: max 2 words, no punctuation/apostrophes → prevents greedy over-matching.
+
+_TR_CHARS = r"A-Za-z\u00c7\u00e7\u011e\u011f\u0130\u0131\u00d6\u00f6\u015e\u015f\u00dc\u00fc"
+_MAHALLE_PATTERN = re.compile(
+    r"(?<!['\u2019\w])"                          # not preceded by apostrophe/word char
+    r"([" + _TR_CHARS + r"]{3,}"                 # first word: ≥3 Turkish letters
+    r"(?:\s+[" + _TR_CHARS + r"]{2,})?)"         # optional second word only
+    r"\s+(?:mahallesi|mahalle|mah\.|mh\.)",
+    re.IGNORECASE | re.UNICODE,
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -217,11 +283,9 @@ def _lookup_in_dictionaries(token: str) -> Optional[str]:
     Returns canonical district name or None.
     """
     norm = _normalise(token)
-    # 1. Neighbourhood → district
     district = NEIGHBORHOOD_TO_DISTRICT.get(norm)
     if district:
         return district
-    # 2. District alias
     district = DISTRICT_ALIASES.get(norm)
     return district
 
@@ -243,7 +307,6 @@ def _build_district_patterns() -> list[tuple[re.Pattern[str], str]]:
 
 def _build_neighbourhood_patterns() -> list[tuple[re.Pattern[str], str]]:
     """Compile regex patterns for neighbourhood → district matching (longest first)."""
-    # Use Turkish + normalised keys for robustness
     entries: dict[str, str] = {}
     for raw_key, district in NEIGHBORHOOD_TO_DISTRICT.items():
         entries[_normalise(raw_key)] = district
@@ -262,6 +325,26 @@ _NEIGHBOURHOOD_PATTERNS = _build_neighbourhood_patterns()
 
 
 # ── Layer implementations ─────────────────────────────────────────────────────
+
+def _layer0_mahalle_context(title: str, content: str) -> tuple[Optional[str], Optional[str]]:
+    """
+    Layer 0: scan for '[Name] Mahallesi/Mah.' patterns.
+
+    Searches title and content *separately* to prevent word bleeding across
+    the boundary (e.g. last word of title + first word of content).
+
+    Returns (neighbourhood_name, district) where district is looked up from
+    our dict if known, otherwise None (name still returned for geocoder).
+    """
+    for text in (title, content):
+        match = _MAHALLE_PATTERN.search(text)
+        if match:
+            neighbourhood = match.group(1).strip()
+            district = _lookup_in_dictionaries(neighbourhood)
+            logger.debug(f"[extractor] Layer 0 hit: '{neighbourhood}' Mahallesi → district={district}")
+            return neighbourhood, district
+    return None, None
+
 
 def _layer1_dictionary(combined_norm: str, combined_raw: str) -> list[str]:
     """Neighbourhood + district regex scan over normalised + raw text."""
@@ -287,7 +370,7 @@ def _layer2_spacy(combined_raw: str) -> list[str]:
     seen: set[str] = set()
 
     try:
-        doc = nlp(combined_raw[:5000])  # cap text length for performance
+        doc = nlp(combined_raw[:5000])
         for ent in doc.ents:
             if ent.label_ not in ("LOC", "GPE"):
                 continue
@@ -320,20 +403,28 @@ def _layer3_district_regex(combined_norm: str) -> list[str]:
 
 def extract_locations(title: str, content: str) -> dict[str, object]:
     """
-    Scan title and content for Kocaeli district names using a hybrid
-    3-layer strategy: neighbourhood dictionary → spaCy NER → district regex.
+    Scan title and content for Kocaeli location names using a hybrid
+    4-layer strategy: mahalle context → neighbourhood dict → spaCy NER → district regex.
 
     Returns:
         {
-          "district"  : Optional[str]  – primary matched district,
-          "locations" : list[str]      – all unique matched districts,
+          "district"     : Optional[str]  – primary matched district,
+          "neighborhood" : Optional[str]  – most specific place (mahalle name),
+          "locations"    : list[str]      – all unique matched districts,
         }
     """
     combined_raw = f"{title} {content}"
     combined_norm = _normalise(combined_raw)
 
+    neighbourhood: Optional[str] = None
+
+    # Layer 0: "[Name] Mahallesi" context – highest precision
+    neighbourhood, l0_district = _layer0_mahalle_context(title, content)
+    results: list[str] = [l0_district] if l0_district else []
+
     # Layer 1: neighbourhood / place-level dictionary
-    results = _layer1_dictionary(combined_norm, combined_raw)
+    if not results:
+        results = _layer1_dictionary(combined_norm, combined_raw)
 
     # Layer 2: spaCy NER (adds entities not caught by sözlük)
     if not results:
@@ -343,7 +434,7 @@ def extract_locations(title: str, content: str) -> dict[str, object]:
     if not results:
         results = _layer3_district_regex(combined_norm)
 
-    # Merge all layers and deduplicate while preserving order
+    # Deduplicate while preserving order
     seen: set[str] = set()
     locations: list[str] = []
     for d in results:
@@ -355,16 +446,30 @@ def extract_locations(title: str, content: str) -> dict[str, object]:
 
     return {
         "district": district,
+        "neighborhood": neighbourhood,
         "locations": locations,
     }
 
 
-def build_geocode_query(district: Optional[str], city: str = "Kocaeli") -> Optional[str]:
+def build_geocode_query(
+    district: Optional[str],
+    neighborhood: Optional[str] = None,
+    city: str = "Kocaeli",
+) -> Optional[str]:
     """
     Compose the address string to send to the Google Geocoding API.
 
-    Returns "Gebze, Kocaeli, Turkey" style string, or None if no district.
+    If a neighbourhood is known, it is prepended for higher precision:
+      "Yahyakaptan Mahallesi, İzmit, Kocaeli, Turkey"
+    If district is unknown but neighbourhood is known:
+      "Yahyakaptan Mahallesi, Kocaeli, Turkey"
+    Otherwise falls back to district-level:
+      "Gebze, Kocaeli, Turkey"
     """
-    if not district:
-        return None
-    return f"{district}, {city}, Turkey"
+    if neighborhood and district:
+        return f"{neighborhood} Mahallesi, {district}, {city}, Turkey"
+    elif neighborhood:
+        return f"{neighborhood} Mahallesi, {city}, Turkey"
+    elif district:
+        return f"{district}, {city}, Turkey"
+    return None

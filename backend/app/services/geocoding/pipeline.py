@@ -60,7 +60,7 @@ def run_geocoding(
     total = news_col.count_documents(query)
     logger.info(f"[geocode-pipeline] Documents to process: {total}")
 
-    counts = {"total": total, "skipped": 0, "geocoded": 0, "failed": 0, "updated": 0}
+    counts = {"total": total, "skipped": 0, "geocoded": 0, "failed": 0, "updated": 0, "neighborhood_hits": 0}
 
     if total == 0:
         return counts
@@ -75,24 +75,28 @@ def run_geocoding(
         # ── Extract locations ──────────────────────────────────────────────
         extracted = extract_locations(title, content)
         district: str | None = extracted["district"]  # type: ignore[assignment]
+        neighborhood: str | None = extracted.get("neighborhood")  # type: ignore[assignment]
         locations: list[str] = extracted["locations"]  # type: ignore[assignment]
 
-        if not district:
-            logger.debug(f"[geocode-pipeline] No district found for doc {doc_id} – skipping.")
+        if not district and not neighborhood:
+            logger.debug(f"[geocode-pipeline] No district or neighborhood found for doc {doc_id} – skipping.")
             counts["skipped"] += 1
             continue
-
-        # ── Build query and geocode ────────────────────────────────────────
-        query_str = build_geocode_query(district)
+        query_str = build_geocode_query(district, neighborhood)
         if not query_str:
             counts["skipped"] += 1
             continue
 
         result = geocode_address(query_str, db)
         if not result:
-            logger.warning(f"[geocode-pipeline] Geocoding failed for '{query_str}' (doc {doc_id}).")
-            counts["failed"] += 1
-            continue
+            # Fallback: try district-only query if neighborhood query failed
+            if neighborhood:
+                fallback_query = build_geocode_query(district)
+                result = geocode_address(fallback_query, db) if fallback_query else None
+            if not result:
+                logger.warning(f"[geocode-pipeline] Geocoding failed for '{query_str}' (doc {doc_id}).")
+                counts["failed"] += 1
+                continue
 
         lat: float = result["lat"]  # type: ignore[assignment]
         lng: float = result["lng"]  # type: ignore[assignment]
@@ -103,25 +107,35 @@ def run_geocoding(
             "coordinates": [lng, lat],  # GeoJSON order: [longitude, latitude]
         }
 
-        # Build update – always set coordinates; fill district/locations if absent
+        # Build update – always set coordinates; fill district/locations/neighborhood if absent
         update_fields: dict[str, Any] = {"coordinates": coordinates_doc}
         if not doc.get("district"):
             update_fields["district"] = district
         if not doc.get("locations"):
             update_fields["locations"] = locations
+        if neighborhood and not doc.get("neighborhood"):
+            update_fields["neighborhood"] = neighborhood
 
         news_col.update_one({"_id": doc_id}, {"$set": update_fields})
 
         counts["geocoded"] += 1
         counts["updated"] += 1
-        logger.debug(
-            f"[geocode-pipeline] Updated doc {doc_id}: "
-            f"district={district}, coords=({lat}, {lng})"
-        )
+        if neighborhood:
+            counts["neighborhood_hits"] += 1
+            logger.info(
+                f"[geocode-pipeline] 📍 MAHALLE TESPİTİ: doc {doc_id} → "
+                f"mahalle={neighborhood}, ilçe={district}, coords=({lat:.4f}, {lng:.4f})"
+            )
+        else:
+            logger.debug(
+                f"[geocode-pipeline] Updated doc {doc_id}: district={district}, coords=({lat:.4f}, {lng:.4f})"
+            )
 
+    neighborhood_count = counts.get("neighborhood_hits", 0)
     logger.info(
         f"[geocode-pipeline] Done. "
         f"total={counts['total']}, geocoded={counts['geocoded']}, "
+        f"mahalle_tespiti={neighborhood_count}, "
         f"skipped={counts['skipped']}, failed={counts['failed']}"
     )
     return counts

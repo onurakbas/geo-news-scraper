@@ -13,17 +13,22 @@ from datetime import datetime, timezone
 from dateutil import parser as dateutil_parser
 from loguru import logger
 
-# Turkish month name → number mapping
+# Turkish month name → number mapping (full + 3-letter abbreviations)
 _TR_MONTHS: dict[str, int] = {
+    # Tam isimler
     "ocak": 1, "şubat": 2, "mart": 3, "nisan": 4,
     "mayıs": 5, "haziran": 6, "temmuz": 7, "ağustos": 8,
     "eylül": 9, "ekim": 10, "kasım": 11, "aralık": 12,
+    # 3-harfli kısaltmalar (örn. Bizim Yaka: "02 Nis 2026 - 17:02")
+    "oca": 1, "şub": 2, "mar": 3, "nis": 4,
+    "may": 5, "haz": 6, "tem": 7, "ağu": 8,
+    "eyl": 9, "eki": 10, "kas": 11, "ara": 12,
 }
 
-# e.g. "17 Mart 2026 15:30" or "17 Mart 2026" or "17 Mart 202615:30" (no space before time)
+# e.g. "17 Mart 2026 15:30", "17 Mart 2026", "17 Mart 202615:30", "02 Nis 2026 - 17:02"
 _TR_PATTERN = re.compile(
     r"(\d{1,2})\s+([A-Za-z\u00c7\u00e7\u011e\u011f\u0130\u0131\u00d6\u00f6\u015e\u015f\u00dc\u00fc]+)\s+(\d{4})"
-    r"(?:[\s:]*(\d{1,2}):(\d{2})(?::(\d{2}))?)?",
+    r"(?:\s*[-–]\s*|\s*)(?:(\d{1,2}):(\d{2})(?::(\d{2}))?)?",
     re.IGNORECASE,
 )
 

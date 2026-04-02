@@ -35,7 +35,8 @@ export interface MapMarker {
   _id: string;
   title: string;
   type: string;
-  district: string;
+  district?: string;
+  neighborhood?: string;
   lat: number; 
   lon: number;
   urls: string[];

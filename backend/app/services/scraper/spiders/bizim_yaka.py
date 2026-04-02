@@ -48,7 +48,8 @@ class BizimYakaSpider(BaseNewsSpider):
 
         published_at = self._extract_date(
             response,
-            "span.post-date",    # Primary: '31 Mart 202610:28'
+            ".tarih",           # Primary: '02 Nis 2026 - 17:02'
+            "span.post-date",
             "div.yazi-tarih",
             "time.entry-date",
             "span.date",

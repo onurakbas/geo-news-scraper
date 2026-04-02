@@ -31,7 +31,7 @@ class BaseNewsSpider(scrapy.Spider):
     max_pages: int = 20  # guard against infinite pagination
 
     # Smart date-based stopping: close spider after this many consecutive stale articles
-    MAX_CONSECUTIVE_OLD: int = 10
+    MAX_CONSECUTIVE_OLD: int = 20
     _cutoff: datetime = datetime.now(tz=timezone.utc) - timedelta(hours=72)
     _consecutive_old: int = 0
 
@@ -134,10 +134,14 @@ class BaseNewsSpider(scrapy.Spider):
 
         # 2. Try provided CSS selectors
         for sel in selectors:
-            raw = (
-                response.css(f"{sel}::attr(datetime)").get()
-                or response.css(f"{sel}::text").get()
-            )
+            raw = response.css(f"{sel}::attr(datetime)").get()
+            if not raw:
+                # Use xpath('string(.)') to get ALL text recursively (like soup.get_text())
+                # because ::text only gets the first text node (e.g. whitespace before an <i> icon)
+                node = response.css(sel)
+                if node:
+                    raw = node.xpath("string(.)").get()
+            
             if raw:
                 parsed = parse_date(raw.strip())
                 if parsed:
