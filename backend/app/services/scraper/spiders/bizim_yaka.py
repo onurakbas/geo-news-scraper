@@ -41,6 +41,8 @@ class BizimYakaSpider(BaseNewsSpider):
 
         content = self._extract_content(
             response,
+            "div.post-text p::text",       # PRIMARY
+            "div.detay p::text",
             "div.entry-content p::text",
             "div.post-content p::text",
             "div.article-body p::text",

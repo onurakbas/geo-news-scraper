@@ -193,7 +193,22 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
         except Exception as gexc:
             logger.warning(f"⚠️  Geocoding başlatılamadı: {repr(gexc)}")
 
-        # ── 5. DB Özeti ───────────────────────────────────────────────────────
+        # ── 5. Deduplication ──────────────────────────────────────────────────
+        logger.info("🔗 Deduplication başlatılıyor – embedding tabanlı benzerlik analizi...")
+        try:
+            from app.services.nlp.deduplicator import run_deduplication  # noqa: PLC0415
+            dedup_summary = await asyncio.to_thread(run_deduplication)
+            logger.info(
+                f"🔗 Deduplication tamamlandı: "
+                f"toplam={dedup_summary['total']}, "
+                f"embedding={dedup_summary['embedded']}, "
+                f"eşleşen_çift={dedup_summary['grouped']}, "
+                f"güncellenen={dedup_summary['updated']}"
+            )
+        except Exception as dexc:
+            logger.warning(f"⚠️  Deduplication başlatılamadı: {repr(dexc)}")
+
+        # ── 6. DB Özeti ───────────────────────────────────────────────────────
         try:
             import os, pymongo
             from dotenv import load_dotenv
@@ -208,6 +223,18 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
             with_coords   = col.count_documents({"coordinates": {"$ne": None}})
             with_hood     = col.count_documents({"neighborhood": {"$ne": None, "$exists": True}})
             coords_no_date = col.count_documents({"coordinates": {"$ne": None}, "published_at": None})
+            # Dedup istatistikleri
+            unique_groups = len(col.distinct("similarity_group_id", {"similarity_group_id": {"$ne": None}}))
+            total_grouped = col.count_documents({"similarity_group_id": {"$ne": None}})
+            duplicate_count = total_grouped - unique_groups  # tekrar sayılan haberler
+            # Birden fazla ÜYEsi olan gruplar (gerçek duplicate'ler)
+            multi_grp_pipeline = [
+                {"$match": {"similarity_group_id": {"$ne": None}}},
+                {"$group": {"_id": "$similarity_group_id", "cnt": {"$sum": 1}, "srcs": {"$addToSet": "$source"}}},
+                {"$match": {"cnt": {"$gt": 1}}},
+            ]
+            multi_grps = list(col.aggregate(multi_grp_pipeline))
+            multi_src_grps = sum(1 for g in multi_grps if len(g["srcs"]) > 1)  # farklı sitelerden gelen
             cat_counts    = list(col.aggregate([
                 {"$group": {
                     "_id": "$type",
@@ -235,6 +262,10 @@ async def _run_spiders_subprocess(spider_names: list[str]) -> None:
             db_lines.append(f"    └─ Tarihi YOK         : {coords_no_date}  ← frontenda görünmez (tarih filtresi)")
             db_lines.append(f"  Koordinatsız           : {total - with_coords}")
             db_lines.append(f"  Mahalle tespiti        : {with_hood}")
+            db_lines.append(f"  {'─'*48}")
+            db_lines.append(f"  Dedup – birleştirilen  : {duplicate_count} tekrar haber ({len(multi_grps)} grup)")
+            db_lines.append(f"    ├─ Farklı sitelerden  : {multi_src_grps} grup  ← ekranda çoklu kaynak")
+            db_lines.append(f"    └─ Aynı siteden       : {len(multi_grps) - multi_src_grps} grup  (aynı URL farklı format)")
             db_lines.append(f"  {'─'*48}")
             db_lines.append(f"  {'Kaynak (Site)':<24} {'Toplam':>8}")
             db_lines.append(f"  {'─'*48}")

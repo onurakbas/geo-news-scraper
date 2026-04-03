@@ -48,6 +48,8 @@ class CagdasKocaeliSpider(BaseNewsSpider):
 
         content = self._extract_content(
             response,
+            "div.post-text p::text",       # PRIMARY: Site'nin gerçek içerik container'ı
+            "div.detay p::text",           # Alternatif
             "div.entry-content p::text",
             "div.post-content p::text",
             "div.news-content p::text",

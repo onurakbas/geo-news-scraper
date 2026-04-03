@@ -42,6 +42,8 @@ class OzgurKocaeliSpider(BaseNewsSpider):
 
         content = self._extract_content(
             response,
+            "div.post-text p::text",       # PRIMARY
+            "div.detay p::text",
             "div.haber-icerik p::text",
             "div.news-detail p::text",
             "div.entry-content p::text",

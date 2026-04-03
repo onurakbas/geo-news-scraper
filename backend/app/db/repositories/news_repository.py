@@ -167,35 +167,84 @@ async def get_map_markers(
 ) -> list[dict]:
     """
     Return all geocoded news as lightweight marker objects.
-    GeoJSON coordinates are unpacked to flat lat/lon fields.
-    No pagination – the frontend handles clustering.
-    """
-    match = _build_match_stage(
-        date_from, date_to, type_filter, district,
-        require_coordinates=True,
-        only_valid_categories=False,  # Show ALL categories on map, not only the 5 mandatory
-    )
-    pipeline = _group_by_similarity_pipeline(match)
 
-    # Unpack GeoJSON: coordinates.coordinates = [lon, lat]
-    pipeline.append({
-        "$addFields": {
-            "lon": {"$arrayElemAt": ["$coordinates.coordinates", 0]},
-            "lat": {"$arrayElemAt": ["$coordinates.coordinates", 1]},
-        }
-    })
-    # Drop raw coordinates object – frontend only needs lat/lon
-    pipeline.append({
-        "$project": {
-            "coordinates": 0,
-            "city": 0,
-            "similarity_group_id": 0,
-        }
-    })
-    pipeline.append({"$sort": {"published_at": -1}})
+    Two-stage approach so that sources/urls from ALL group members are merged:
+      Stage 1 – Group ALL docs by similarity_group_id (no coord filter yet).
+      Stage 2 – Drop groups without any coordinate, apply remaining filters.
+    """
+    # Base match: date / type / district only — NO coordinate requirement yet
+    base_match = _build_match_stage(
+        date_from, date_to, type_filter, district,
+        require_coordinates=False,
+        only_valid_categories=False,
+    )
+
+    pipeline: list[dict] = [
+        {"$match": base_match},
+        {"$sort": {"published_at": -1}},
+        {
+            "$group": {
+                "_id": {
+                    "$ifNull": ["$similarity_group_id", {"$toString": "$_id"}]
+                },
+                "doc_id":       {"$first": {"$toString": "$_id"}},
+                "title":        {"$first": "$title"},
+                "published_at": {"$first": "$published_at"},
+                "type":         {"$first": "$type"},
+                "district":     {"$first": "$district"},
+                "neighborhood": {"$first": "$neighborhood"},
+                # Collect ALL coordinates, pick first non-null below
+                "all_coordinates": {"$push": "$coordinates"},
+                # Merge sources + urls from EVERY member
+                "sources": {"$addToSet": "$source"},
+                "urls":    {"$addToSet": {"$toString": "$url"}},
+            }
+        },
+        # Extract first non-null coordinate from the collected list
+        {
+            "$addFields": {
+                "coordinates": {
+                    "$arrayElemAt": [
+                        {
+                            "$filter": {
+                                "input": "$all_coordinates",
+                                "as": "c",
+                                "cond": {"$ne": ["$$c", None]},
+                            }
+                        },
+                        0,
+                    ]
+                }
+            }
+        },
+        # Keep only groups that have at least one geocoded member
+        {"$match": {"coordinates": {"$ne": None, "$exists": True}}},
+        {
+            "$project": {
+                "_id":          "$doc_id",
+                "title":        1,
+                "published_at": 1,
+                "type":         1,
+                "district":     1,
+                "neighborhood": 1,
+                "sources":      1,
+                "urls":         1,
+                "coordinates":  1,
+            }
+        },
+        {
+            "$addFields": {
+                "lon": {"$arrayElemAt": ["$coordinates.coordinates", 0]},
+                "lat": {"$arrayElemAt": ["$coordinates.coordinates", 1]},
+            }
+        },
+        {"$project": {"coordinates": 0, "all_coordinates": 0}},
+        {"$sort": {"published_at": -1}},
+    ]
 
     cursor = db["news"].aggregate(pipeline)
     return await cursor.to_list(length=None)
+
 
 
 async def get_filter_options(

@@ -408,6 +408,93 @@ POI_TO_LOCATION: dict[str, tuple[str, Optional[str]]] = {
     "tübitak marmara arastirma merkezi": ("Gebze", None),
     "tübitak marmara araştırma merkezi": ("Gebze", None),
     "tubitak marmara arastirma merkezi": ("Gebze", None),
+
+    # ── Karayolları – D100 (eski E5) ───────────────────────────────────────
+    "d-100": ("İzmit", None),
+    "d100": ("İzmit", None),
+    "d 100": ("İzmit", None),
+    "e-5": ("İzmit", None),
+    "e5 yolu": ("İzmit", None),
+    "eski e5": ("İzmit", None),
+    "d100 karayolu": ("İzmit", None),
+    "d-100 karayolu": ("İzmit", None),
+    # İlçe bazlı D100
+    "gebze d100": ("Gebze", None),
+    "çayırova d100": ("Çayırova", None),
+    "cayirova d100": ("Çayırova", None),
+    "darıca d100": ("Darıca", None),
+    "darica d100": ("Darıca", None),
+    "körfez d100": ("Körfez", None),
+    "korfez d100": ("Körfez", None),
+    "derince d100": ("Derince", None),
+    "izmit d100": ("İzmit", None),
+
+    # ── TEM Otoyolu ─────────────────────────────────────────────────────────
+    "tem otoyolu": ("İzmit", None),
+    "tem yolu": ("İzmit", None),
+    "tem": ("İzmit", None),          # TEM'de kaza / TEM geçişinde
+    "gebze tem": ("Gebze", None),
+    "çayırova tem": ("Çayırova", None),
+    "cayirova tem": ("Çayırova", None),
+    "izmit tem": ("İzmit", None),
+    "körfez tem": ("Körfez", None),
+    "korfez tem": ("Körfez", None),
+    "o-2 otoyolu": ("İzmit", None),
+    "o2 otoyolu": ("İzmit", None),
+
+    # ── O-4 / Gebze-Orhangazi-İzmir Otoyolu ────────────────────────────────
+    "o-4 otoyolu": ("Gebze", None),
+    "o4 otoyolu": ("Gebze", None),
+    "gebze orhangazi otoyol": ("Gebze", None),
+    "osmangazi köprüsü": ("Gebze", None),
+    "osmangazi koprusu": ("Gebze", None),
+
+    # ── Kavşaklar & Özel Yol Noktaları ─────────────────────────────────────
+    "gebze kavşağı": ("Gebze", None),
+    "gebze kavsagi": ("Gebze", None),
+    "çayırova kavşağı": ("Çayırova", None),
+    "cayirova kavsagi": ("Çayırova", None),
+    "körfez kavşağı": ("Körfez", None),
+    "korfez kavsagi": ("Körfez", None),
+    "derince kavşağı": ("Derince", None),
+    "derince kavsagi": ("Derince", None),
+    "yarımca kavşağı": ("Körfez", "Yarımca"),
+    "yarimca kavsagi": ("Körfez", "Yarımca"),
+    "hereke kavşağı": ("Körfez", "Hereke"),
+    "hereke kavsagi": ("Körfez", "Hereke"),
+    "gebze çıkışı": ("Gebze", None),
+    "gebze cikisi": ("Gebze", None),
+    "izmit çıkışı": ("İzmit", None),
+    "izmit cikisi": ("İzmit", None),
+
+    # ── Köprüler & Tüneller ─────────────────────────────────────────────────
+    "değirmendere köprüsü": ("Gölcük", "Değirmendere"),
+    "degirmendere koprusu": ("Gölcük", "Değirmendere"),
+    "dilovası tüneli": ("Dilovası", None),
+    "dilovasi tuneli": ("Dilovası", None),
+
+    # ── Liman Yolu – Derince ────────────────────────────────────────────────
+    "derince liman yolu": ("Derince", None),
+    "liman yolu": ("Derince", None),
+    "derince limanı": ("Derince", None),
+    "derince limani": ("Derince", None),
+
+    # ── D-130 / İzmit-Kandıra ───────────────────────────────────────────────
+    "d-130": ("İzmit", None),
+    "d130": ("İzmit", None),
+    "kandıra yolu": ("Kandıra", None),
+    "kandira yolu": ("Kandıra", None),
+
+    # ── D-140 / İzmit-Karamürsel ────────────────────────────────────────────
+    "d-140": ("Karamürsel", None),
+    "d140": ("Karamürsel", None),
+    "karamürsel yolu": ("Karamürsel", None),
+    "karamursel yolu": ("Karamürsel", None),
+
+    # ── Diğer bilindik yollar ───────────────────────────────────────────────
+    "izmit ankara yolu": ("İzmit", None),
+    "ankara yolu izmit": ("İzmit", None),
+    "istanbul yolu kocaeli": ("Gebze", None),
 }
 
 
@@ -416,6 +503,7 @@ POI_TO_LOCATION: dict[str, tuple[str, Optional[str]]] = {
 # Rules: max 2 words, no punctuation/apostrophes → prevents greedy over-matching.
 
 _TR_CHARS = r"A-Za-z\u00c7\u00e7\u011e\u011f\u0130\u0131\u00d6\u00f6\u015e\u015f\u00dc\u00fc"
+
 _MAHALLE_PATTERN = re.compile(
     r"(?<!['\u2019\w])"                          # not preceded by apostrophe/word char
     r"([" + _TR_CHARS + r"]{3,}"                 # first word: ≥3 Turkish letters

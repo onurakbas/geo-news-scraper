@@ -42,6 +42,8 @@ class SesKocaeliSpider(BaseNewsSpider):
 
         content = self._extract_content(
             response,
+            "div.post-text p::text",       # PRIMARY
+            "div.detay p::text",
             "div.content p::text",
             "div.article-body p::text",
             "div.entry-content p::text",
