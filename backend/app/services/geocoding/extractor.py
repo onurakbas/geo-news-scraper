@@ -612,20 +612,31 @@ def _layer0_mahalle_context(title: str, content: str) -> tuple[Optional[str], Op
     Returns (neighbourhood_name, district) where district is looked up from
     our dict if known, otherwise None (name still returned for geocoder).
     """
+    # Turkish suffixes that indicate the first word is NOT a proper noun
+    # but a common word that leaked into the regex match.
+    # e.g. "geçişi Malta Mahallesi" → "geçişi" is not a place name
+    _NON_NAME_SUFFIXES = (
+        "si", "sı", "ın", "in", "un", "ün",        # possessive/genitive
+        "da", "de", "ta", "te",                       # locative
+        "nda", "nde",                                  # locative with n-buffer
+        "dan", "den",                                  # ablative
+        "ya", "ye", "na", "ne",                        # dative
+    )
+
     for text in (title, content):
         match = _MAHALLE_PATTERN.search(text)
         if match:
             neighbourhood = match.group(1).strip()
 
-            # "Kartepe İstasyon Mahallesi" → ilk kelime ilçe adıysa strip et
-            # Neighbourhood = "İstasyon", district = "Kartepe"
             words = neighbourhood.split()
             if len(words) >= 2:
-                first_word_norm = _normalise(words[0])
+                first_word = words[0]
+                first_word_norm = _normalise(first_word)
+
+                # Case 1: first word is a district name → strip it, use as district
                 if first_word_norm in DISTRICT_ALIASES or any(
                     _normalise(d) == first_word_norm for d in KOCAELI_DISTRICTS
                 ):
-                    # İlk kelime ilçe adı → onu district olarak kullan, geri kalanı neighbourhood
                     inferred_district = DISTRICT_ALIASES.get(first_word_norm) or next(
                         (d for d in KOCAELI_DISTRICTS if _normalise(d) == first_word_norm), None
                     )
@@ -637,10 +648,25 @@ def _layer0_mahalle_context(title: str, content: str) -> tuple[Optional[str], Op
                     )
                     return neighbourhood, district
 
+                # Case 2: first word starts with lowercase OR ends with a
+                # Turkish grammatical suffix → it's a leaked common word,
+                # not a proper noun. Strip it and keep only the second word.
+                # Examples: "geçişi Malta", "yılında Kayacık", "ilçesi Malta"
+                is_lowercase_start = first_word[0].islower()
+                has_suffix = any(first_word_norm.endswith(s) for s in _NON_NAME_SUFFIXES)
+
+                if is_lowercase_start or has_suffix:
+                    neighbourhood = " ".join(words[1:])
+                    logger.debug(
+                        f"[extractor] Layer 0: stripped non-name prefix "
+                        f"'{first_word}' → neighbourhood='{neighbourhood}'"
+                    )
+
             district = _lookup_in_dictionaries(neighbourhood)
             logger.debug(f"[extractor] Layer 0 hit: '{neighbourhood}' Mahallesi → district={district}")
             return neighbourhood, district
     return None, None
+
 
 
 def _layer05_poi(combined_norm: str) -> tuple[Optional[str], Optional[str]]:
