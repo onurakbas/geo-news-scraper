@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Search, RefreshCw, Car, Flame, Zap, ShieldAlert,
   Music2, LayoutGrid, MapPin, Clock, Filter,
-  CalendarDays, ChevronDown, Newspaper,
+  CalendarDays, ChevronDown, Newspaper, Moon, Sun,
 } from 'lucide-react';
 import MapContainer from '../components/map/MapContainer';
 import { newsService } from '../api/newsService';
@@ -20,7 +20,7 @@ type EventType =
 const EVENT_FILTERS: { label: EventType; Icon: React.ElementType; color: string }[] = [
   { label: 'Trafik Kazası', Icon: Car, color: '#f59e0b' },
   { label: 'Yangın', Icon: Flame, color: '#ef4444' },
-  { label: 'Elektrik Kesintisi', Icon: Zap, color: '#b6c4ff' },
+  { label: 'Elektrik Kesintisi', Icon: Zap, color: 'var(--accent)' },
   { label: 'Hırsızlık', Icon: ShieldAlert, color: '#a855f7' },
   { label: 'Kültürel Etkinlikler', Icon: Music2, color: '#a43d77' },
   { label: 'Diğer', Icon: LayoutGrid, color: '#22c55e' },
@@ -35,7 +35,7 @@ const iconOf = (type: string): React.ElementType => {
 };
 
 const accentOf = (type: string): string =>
-  ({ 'Yangın': '#ef4444', 'Trafik Kazası': '#f59e0b', 'Elektrik Kesintisi': '#b6c4ff', 'Hırsızlık': '#a855f7', 'Kültürel Etkinlikler': '#a43d77' }[type] ?? '#22c55e');
+  ({ 'Yangın': '#ef4444', 'Trafik Kazası': '#f59e0b', 'Elektrik Kesintisi': 'var(--accent)', 'Hırsızlık': '#a855f7', 'Kültürel Etkinlikler': '#a43d77' }[type] ?? '#22c55e');
 
 const DISTRICTS = ['Tüm İlçeler', 'İzmit', 'Gebze', 'Derince', 'Körfez', 'Kartepe', 'Gölcük', 'Çayırova', 'Dilovası'];
 const TIME_RANGES = ['Tüm Zamanlar', 'Son 24 Saat', 'Son 3 Gün'];
@@ -63,7 +63,7 @@ const fmtDate = (s?: string) => {
 
 /* ─── Shared style tokens ─────────────────────────────────── */
 const inputStyle: React.CSSProperties = {
-  width: '100%', background: '#1e222a', color: '#dfe2eb',
+  width: '100%', background: '#1e222a', color: 'var(--text-main)',
   border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10,
   padding: '9px 32px 9px 12px', fontSize: 13,
   fontFamily: 'Inter, system-ui, sans-serif',
@@ -71,7 +71,7 @@ const inputStyle: React.CSSProperties = {
 };
 const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: 9, fontWeight: 700,
-  color: '#3d4150', letterSpacing: '0.18em',
+  color: 'var(--text-muted-dark)', letterSpacing: '0.18em',
   textTransform: 'uppercase', marginBottom: 7,
 };
 
@@ -129,7 +129,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
             onClick={onClose}
             style={{
               width: 28, height: 28, borderRadius: 8,
-              background: 'rgba(255,255,255,0.05)',
+              background: 'var(--border-medium)',
               border: '1px solid rgba(255,255,255,0.08)',
               color: '#908f9d', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -159,15 +159,15 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'var(--border-light)',
                   border: '1px solid rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
                   <CalendarDays size={14} color="#5a5e72" strokeWidth={2} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#dfe2eb', fontWeight: 500 }}>{fmtDate(marker.published_at)}</div>
-                  <div style={{ fontSize: 10, color: '#454652', marginTop: 1 }}>{timeAgo(marker.published_at)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-main)', fontWeight: 500 }}>{fmtDate(marker.published_at)}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{timeAgo(marker.published_at)}</div>
                 </div>
               </div>
             )}
@@ -177,7 +177,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'var(--border-light)',
                   border: '1px solid rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
@@ -185,10 +185,10 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                 </div>
                 <div>
                   {marker.neighborhood && (
-                    <div style={{ fontSize: 11, color: '#dfe2eb', fontWeight: 500 }}>{marker.neighborhood}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-main)', fontWeight: 500 }}>{marker.neighborhood}</div>
                   )}
                   {marker.district && (
-                    <div style={{ fontSize: 10, color: '#454652', marginTop: 1 }}>{marker.district}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{marker.district}</div>
                   )}
                 </div>
               </div>
@@ -199,7 +199,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'var(--border-light)',
                   border: '1px solid rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
@@ -262,7 +262,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
             return (
               <div>
                 <div style={{
-                  fontSize: 9, fontWeight: 700, color: '#3d4150',
+                  fontSize: 9, fontWeight: 700, color: 'var(--text-muted-dark)',
                   letterSpacing: '0.15em', textTransform: 'uppercase',
                   marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6,
                 }}>
@@ -282,7 +282,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '9px 12px', borderRadius: 9,
-                        background: 'rgba(255,255,255,0.04)',
+                        background: 'var(--border-light)',
                         border: '1px solid rgba(255,255,255,0.07)',
                         textDecoration: 'none', transition: 'all 0.15s',
                       }}
@@ -291,11 +291,11 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                         e.currentTarget.style.borderColor = `${accent}30`;
                       }}
                       onMouseOut={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                        e.currentTarget.style.background = 'var(--border-light)';
+                        e.currentTarget.style.borderColor = 'var(--border-heavy)';
                       }}
                     >
-                      <span style={{ fontSize: 12, color: '#dfe2eb', fontWeight: 600 }}>{src}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-main)', fontWeight: 600 }}>{src}</span>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                       </svg>
@@ -329,6 +329,8 @@ export default function MapPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeMsg, setScrapeMsg] = useState<string | null>(null);
 
+  const [isLightMode, setIsLightMode] = useState(false);
+
   /* fetch */
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -340,6 +342,12 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  /* apply light mode */
+  useEffect(() => {
+    if (isLightMode) document.body.classList.add('light-mode');
+    else document.body.classList.remove('light-mode');
+  }, [isLightMode]);
 
   /* scrape */
   const handleScrape = useCallback(async () => {
@@ -415,8 +423,8 @@ export default function MapPage() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: '100vh', background: '#10141a',
-      color: '#dfe2eb', overflow: 'hidden', position: 'relative',
+      height: '100vh', background: 'var(--bg-body)',
+      color: 'var(--text-main)', overflow: 'hidden', position: 'relative',
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
       <style>{`
@@ -427,17 +435,17 @@ export default function MapPage() {
       {loading && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 300,
-          background: 'rgba(16,20,26,0.88)', backdropFilter: 'blur(10px)',
+          background: 'var(--bg-body-trans)', backdropFilter: 'blur(10px)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 16,
         }}>
           <div style={{
             width: 46, height: 46,
             border: '3px solid rgba(182,196,255,0.1)',
-            borderTopColor: '#b6c4ff', borderRadius: '50%',
+            borderTopColor: 'var(--accent)', borderRadius: '50%',
             animation: '_sentinel_spin 0.85s linear infinite',
           }} />
-          <span style={{ color: '#b6c4ff', fontSize: 10, fontWeight: 700, letterSpacing: '0.3em' }}>
+          <span style={{ color: 'var(--accent)', fontSize: 10, fontWeight: 700, letterSpacing: '0.3em' }}>
             YÜKLENIYOR…
           </span>
         </div>
@@ -446,7 +454,7 @@ export default function MapPage() {
       {/* ── Header ── */}
       <header style={{
         position: 'fixed', top: 0, width: '100%', height: 60, zIndex: 100,
-        background: 'rgba(14,18,24,0.9)',
+        background: 'var(--bg-header)',
         backdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -470,13 +478,13 @@ export default function MapPage() {
             fontFamily: 'Manrope, Inter, sans-serif',
             fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em',
             color: '#e8ecf8',
-          }}>Haber Radar</span>
+          }}>News Radar</span>
         </div>
 
         {/* Search */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 9,
-          background: '#1a1e26', borderRadius: 10,
+          background: 'var(--bg-panel-light)', borderRadius: 10,
           padding: '8px 16px', border: '1px solid rgba(255,255,255,0.06)',
           width: '34%', minWidth: 220,
         }}>
@@ -487,12 +495,12 @@ export default function MapPage() {
             onChange={e => setSearch(e.target.value)}
             style={{
               background: 'transparent', border: 'none', outline: 'none',
-              fontSize: 13, color: '#dfe2eb', width: '100%',
+              fontSize: 13, color: 'var(--text-main)', width: '100%',
               fontFamily: 'Inter, system-ui, sans-serif',
             }}
           />
           {search && (
-            <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#454652', display: 'flex' }}>
+            <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
@@ -500,23 +508,42 @@ export default function MapPage() {
           )}
         </div>
 
-        {/* Right: only refresh */}
-        <button
-          onClick={loadData}
-          title="Yenile"
-          style={{
-            width: 36, height: 36, borderRadius: 9,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            cursor: 'pointer', color: '#b6c4ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.15s',
-          }}
-          onMouseOver={e => (e.currentTarget.style.background = 'rgba(182,196,255,0.1)')}
-          onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-        >
-          <RefreshCw size={15} strokeWidth={2.2} />
-        </button>
+        {/* Right: actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={() => setIsLightMode(!isLightMode)}
+            title="Tema Değiştir"
+            style={{
+              width: 36, height: 36, borderRadius: 9,
+              background: 'var(--border-light)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              cursor: 'pointer', color: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = 'rgba(182,196,255,0.1)')}
+            onMouseOut={e => (e.currentTarget.style.background = 'var(--border-light)')}
+          >
+            {isLightMode ? <Moon size={15} strokeWidth={2.2} /> : <Sun size={15} strokeWidth={2.2} />}
+          </button>
+
+          <button
+            onClick={loadData}
+            title="Yenile"
+            style={{
+              width: 36, height: 36, borderRadius: 9,
+              background: 'var(--border-light)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              cursor: 'pointer', color: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = 'rgba(182,196,255,0.1)')}
+            onMouseOut={e => (e.currentTarget.style.background = 'var(--border-light)')}
+          >
+            <RefreshCw size={15} strokeWidth={2.2} />
+          </button>
+        </div>
       </header>
 
       {/* ── Body ── */}
@@ -525,7 +552,7 @@ export default function MapPage() {
         {/* ── Left sidebar ── */}
         <aside style={{
           width: 280, flexShrink: 0,
-          background: '#13171e',
+          background: 'var(--bg-panel)',
           borderRight: '1px solid rgba(255,255,255,0.045)',
           overflowY: 'auto', overflowX: 'hidden',
           zIndex: 40,
@@ -589,12 +616,12 @@ export default function MapPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '9px 11px', borderRadius: 9, cursor: 'pointer',
                         background: on ? `${color}12` : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${on ? color + '28' : 'rgba(255,255,255,0.04)'}`,
+                        border: `1px solid ${on ? color + '28' : 'var(--border-light)'}`,
                         transition: 'all 0.15s',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <Icon size={15} color={on ? color : '#3d4150'} strokeWidth={2} />
-                          <span style={{ fontSize: 12, fontWeight: 500, color: on ? '#dfe2eb' : '#4a4e5d' }}>{label}</span>
+                          <Icon size={15} color={on ? color : 'var(--text-muted-dark)'} strokeWidth={2} />
+                          <span style={{ fontSize: 12, fontWeight: 500, color: on ? 'var(--text-main)' : '#4a4e5d' }}>{label}</span>
                         </div>
                         <input
                           type="checkbox" checked={on} onChange={() => toggleType(label)}
@@ -613,9 +640,9 @@ export default function MapPage() {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   padding: '10px 0', borderRadius: 10, width: '100%',
-                  background: scraping ? 'rgba(255,255,255,0.04)' : 'rgba(182,196,255,0.1)',
-                  border: `1px solid ${scraping ? 'rgba(255,255,255,0.06)' : 'rgba(182,196,255,0.2)'}`,
-                  color: scraping ? '#3d4150' : '#b6c4ff',
+                  background: scraping ? 'var(--border-light)' : 'rgba(182,196,255,0.1)',
+                  border: `1px solid ${scraping ? 'var(--border-heavy)' : 'rgba(182,196,255,0.2)'}`,
+                  color: scraping ? 'var(--text-muted-dark)' : 'var(--accent)',
                   fontSize: 12, fontWeight: 600, cursor: scraping ? 'not-allowed' : 'pointer',
                   transition: 'all 0.15s',
                 }}
@@ -627,7 +654,7 @@ export default function MapPage() {
             </div>
 
             {/* Divider */}
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.045)', margin: '0 -2px' }} />
+            <div style={{ height: 1, background: 'var(--border-medium)', margin: '0 -2px' }} />
 
             {/* News feed */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 20 }}>
@@ -635,21 +662,21 @@ export default function MapPage() {
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 position: 'sticky', top: 0,
-                background: '#13171e', paddingBottom: 8, paddingTop: 2,
+                background: 'var(--bg-panel)', paddingBottom: 8, paddingTop: 2,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <div style={{
                     width: 6, height: 6, borderRadius: '50%',
                     background: '#ef4444', boxShadow: '0 0 7px #ef4444',
                   }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, color: '#3d4150', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted-dark)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
                     Son Haberler
                   </span>
                 </div>
                 <span style={{
                   fontSize: 10, fontWeight: 700,
                   color: '#5a5e72',
-                  background: 'rgba(255,255,255,0.05)',
+                  background: 'var(--border-medium)',
                   border: '1px solid rgba(255,255,255,0.07)',
                   borderRadius: 99, padding: '2px 8px',
                 }}>
@@ -658,7 +685,7 @@ export default function MapPage() {
               </div>
 
               {markers.length === 0 && !loading && (
-                <div style={{ color: '#3d4150', fontSize: 12, textAlign: 'center', padding: '28px 0' }}>
+                <div style={{ color: 'var(--text-muted-dark)', fontSize: 12, textAlign: 'center', padding: '28px 0' }}>
                   Haber bulunamadı.
                 </div>
               )}
@@ -674,12 +701,12 @@ export default function MapPage() {
                       background: selected?._id === news._id
                         ? `${accent}10`
                         : 'rgba(255,255,255,0.025)',
-                      border: `1px solid ${selected?._id === news._id ? accent + '25' : 'rgba(255,255,255,0.04)'}`,
+                      border: `1px solid ${selected?._id === news._id ? accent + '25' : 'var(--border-light)'}`,
                       borderRadius: 10, padding: '11px 12px',
                       cursor: 'pointer', transition: 'all 0.15s',
                       display: 'flex', gap: 10, alignItems: 'flex-start',
                     }}
-                    onMouseOver={e => { if (selected?._id !== news._id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                    onMouseOver={e => { if (selected?._id !== news._id) e.currentTarget.style.background = 'var(--border-medium)'; }}
                     onMouseOut={e => { if (selected?._id !== news._id) e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
                   >
                     {/* Icon bubble */}
@@ -695,7 +722,7 @@ export default function MapPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{
                         margin: 0, fontSize: 12, fontWeight: 600,
-                        lineHeight: 1.45, color: '#dfe2eb',
+                        lineHeight: 1.45, color: 'var(--text-main)',
                         overflow: 'hidden', display: '-webkit-box',
                         WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
                       }}>{news.title}</p>
@@ -712,7 +739,7 @@ export default function MapPage() {
                         {news.published_at && (
                           <>
                             <span style={{ fontSize: 8, color: '#252930' }}>•</span>
-                            <span style={{ fontSize: 9, color: '#3d4150' }}>{timeAgo(news.published_at)}</span>
+                            <span style={{ fontSize: 9, color: 'var(--text-muted-dark)' }}>{timeAgo(news.published_at)}</span>
                           </>
                         )}
                       </div>

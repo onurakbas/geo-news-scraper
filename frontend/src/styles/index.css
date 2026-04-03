@@ -8,8 +8,41 @@
 /* ── Reset ────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; overflow: hidden; }
-body { font-family: 'Inter', system-ui, sans-serif; background: #10141a; color: #dfe2eb; }
+:root {
+  --bg-body: #10141a;
+  --bg-body-trans: rgba(16,20,26,0.88);
+  --bg-header: rgba(14,18,24,0.9);
+  --bg-panel: #13171e;
+  --bg-panel-light: #1a1e26;
+  --bg-panel-dark: #14181f;
+  --text-main: #dfe2eb;
+  --text-muted: #454652;
+  --text-muted-dark: #3d4150;
+  --accent: #b6c4ff;
+  --border-light: rgba(255,255,255,0.04);
+  --border-medium: rgba(255,255,255,0.05);
+  --border-heavy: rgba(255,255,255,0.07);
+}
+
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg-body); color: var(--text-main); transition: background 0.3s ease, color 0.3s ease; }
 select { font-family: inherit; }
+
+/* ── Light Mode CSS Variables ───────────────────────────── */
+body.light-mode {
+  --bg-body: #75a1bd;
+  --bg-body-trans: rgba(117,161,189,0.88);
+  --bg-header: rgba(117,161,189,0.9);
+  --bg-panel: #8cb0c9;
+  --bg-panel-light: #a4c1d6;
+  --bg-panel-dark: #6e98b3;
+  --text-main: #0c1015;
+  --text-muted: #2a2e38;
+  --text-muted-dark: #1a1d24;
+  --accent: #112a86;
+  --border-light: rgba(0,0,0,0.06);
+  --border-medium: rgba(0,0,0,0.1);
+  --border-heavy: rgba(0,0,0,0.15);
+}
 
 /* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar          { width: 3px; }
