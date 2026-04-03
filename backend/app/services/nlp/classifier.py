@@ -12,15 +12,16 @@ Priority order (highest → lowest):
 
 When multiple categories match, the highest-priority one wins.
 
-IMPORTANT – Matching strategy:
-  Each keyword is compiled as a regex with word-boundary markers (\b).
-  This prevents substring false-positives such as "kazandı" matching "kaza".
+Matching strategy:
+  • Normal keywords  → compiled as \\b<word>\\b  (whole-word match)
+  • Prefix keywords (start with ^) → compiled as \\b<stem>  (prefix match)
+    This handles Turkish agglutinative suffixes:
+      ^dolandır  matches  dolandırıcı, dolandırıldığını, dolandırılma …
 """
 
 from __future__ import annotations
 
 import re
-from functools import lru_cache
 from typing import Optional
 
 # ── Category constants ────────────────────────────────────────────────────────
@@ -33,8 +34,6 @@ CAT_KULTUR          = "Kültürel Etkinlikler"
 CAT_DIGER           = "Diğer"
 
 # Priority list – first match wins.
-# Trafik Kazası is above Yangın because traffic accident news often mention
-# "itfaiye" (fire department arrived) causing false Yangın hits.
 PRIORITY: list[str] = [
     CAT_TRAFIK,
     CAT_YANGIN,
@@ -45,18 +44,18 @@ PRIORITY: list[str] = [
 
 # ── Keyword dictionary ────────────────────────────────────────────────────────
 # Rules:
-#   • Each keyword is matched as a WHOLE WORD (\b...\b regex).
+#   • Normal keyword:  matched as WHOLE WORD (\b...\b)
+#   • ^prefix keyword: matched as PREFIX only (\b...) — no trailing boundary
+#     so Turkish suffixes (-ıcı, -dığını, -arak, etc.) are captured.
 #   • Prefer multi-word phrases over single words to reduce false-positives.
-#   • Avoid overly generic words (arıza, trafo, kesinti, kısa devre, duman)
-#     that appear in non-category contexts.
 
 KEYWORDS: dict[str, list[str]] = {
     CAT_TRAFIK: [
-        # Çok spesifik compound phrases
+        # Compound phrases
         "trafik kazası", "zincirleme kaza", "feci kaza",
         "kazada yaralı", "kazada hayatını",
         "kaza sonucu", "maddi hasarlı kaza",
-        # Tek kelime "kaza" — regex \bkaza\b ile "kazandı" eşleşmez
+        # Single word — \bkaza\b won't match "kazandı"
         "kaza",
         # Araç hareketleri
         "devrildi", "takla attı", "şarampole", "bariyere çarptı",
@@ -71,18 +70,15 @@ KEYWORDS: dict[str, list[str]] = {
         "sürücü hayatını kaybetti",
     ],
     CAT_YANGIN: [
-        # Ana yangın kelimeleri (ASCII duplikatlar kaldırıldı)
         "yangın", "yangında", "yangını",
         "alev", "alevler", "alev topuna",
         "tutuştu", "yandı", "yanarak",
         "kundak", "kundaklama",
-        # Compound phrases
         "orman yangın", "bina yandı", "ev yandı", "fabrika yangın",
         "depo yandı", "araç yandı", "arazi yangını",
         "büyük yangın", "yangına müdahale",
     ],
     CAT_HIRSIZLIK: [
-        # Ana kelimeler (ASCII duplikatlar kaldırıldı)
         "hırsızlık", "hırsız",
         "çalındı", "çalıntı",
         "gasp", "soygun", "soygunu", "soydu",
@@ -91,9 +87,13 @@ KEYWORDS: dict[str, list[str]] = {
         "kablo hırsız", "kablo çalındı", "metal hırsız",
         "evden hırsızlık", "iş yerinden çalındı",
         "banka soygunu", "market soygunu", "kasa kırdı",
+        # Dolandırıcılık — prefix match ile tüm Türkçe çekimlerini yakala
+        # ^dolandır → dolandırıcı, dolandırıcılık, dolandırıldı,
+        #             dolandırıldığını, dolandırılma, dolandırma …
+        "^dolandır",
+        "vurgun", "vurgunu",
     ],
     CAT_ELEKTRIK: [
-        # Compound phrases (tek kelime "kesinti", "arıza", "trafo" kaldırıldı)
         "elektrik kesintisi", "elektrik kesildi", "elektrik yok",
         "enerji kesintisi", "planlı kesinti",
         "elektrik arızası", "şebeke arızası",
@@ -104,45 +104,62 @@ KEYWORDS: dict[str, list[str]] = {
     ],
     CAT_KULTUR: [
         "konser", "sergi", "tiyatro", "festival",
-        "kültür", "sanat",
         "müzik", "sinema",
         "gösteri", "panayır", "şenlik",
         "fuar", "kermes",
         "açılış töreni", "ödül töreni",
+        "^ödül",              # ödül, ödüllerini, ödülleri …
         "söyleşi", "konferans", "sempozyum",
         "halk konseri", "dans gösterisi", "tiyatro oyunu",
         "bilim festivali", "kariyer günü",
-        # NOT: "etkinlik" tek başına kaldırıldı — "verimlilik/etkinlik" anlamında
-        # adliye/bürokratik haberlerde de geçiyor. "mezuniyet" de kaldırıldı — 
-        # tören haberleri zaten "açılış töreni" veya "ödül töreni" ile yakalanır.
+        # Spor / Turnuvalar
+        "turnuva", "derbi",
+        "^şampiyon",         # şampiyon, şampiyonluk, şampiyona …
+        "play-off", "playoff",
+        "milli takım",
+        # NOT: "kültür", "sanat" kaldırıldı — belediye haberlerinde
+        #      "kültür merkezi", "sanat galerisi" olarak çok sık geçiyor
+        #      ve yanlış pozitif veriyor.
+        # NOT: "lig", "maç" kaldırıldı — çok genel, içerikte her yerde
+        #      geçebilir ("süper lig" başlıkta zaten şampiyon/playoff
+        #      ile birlikte gelir).
     ],
 }
 
 
-
-# ── Compile keyword patterns (word-boundary) ─────────────────────────────────
+# ── Compile keyword patterns ─────────────────────────────────────────────────
+# • Normal:  \b<word>\b     (whole word)
+# • Prefix:  \b<stem>       (^prefix convention)
 # Longest-first sort ensures multi-word phrases are tried before single words.
 
 _COMPILED_PATTERNS: dict[str, list[re.Pattern[str]]] = {}
 
 for _cat, _kw_list in KEYWORDS.items():
-    # Sort keywords: longest first so "trafik kazası" is tested before "kaza"
     sorted_kws = sorted(_kw_list, key=len, reverse=True)
-    _COMPILED_PATTERNS[_cat] = [
-        re.compile(r"\b" + re.escape(kw) + r"\b", re.IGNORECASE)
-        for kw in sorted_kws
-    ]
+    patterns = []
+    for kw in sorted_kws:
+        if kw.startswith("^"):
+            # Prefix match — no trailing \b
+            stem = kw[1:]
+            patterns.append(re.compile(r"\b" + re.escape(stem), re.IGNORECASE))
+        else:
+            # Full word match
+            patterns.append(re.compile(r"\b" + re.escape(kw) + r"\b", re.IGNORECASE))
+    _COMPILED_PATTERNS[_cat] = patterns
 
 
 # ── Core classifier ───────────────────────────────────────────────────────────
 
-def _count_category_hits(text: str, category: str) -> int:
-    """Count distinct keyword matches in text, deduplicating overlapping spans.
+CONTENT_HIT_THRESHOLD: int = 3
+"""Minimum distinct keyword hits required in the article BODY (not title)
+to classify the article. Title needs only 1 hit (high-confidence signal).
+Set to 3 to prevent false positives from long articles that incidentally
+mention category keywords (e.g. a metro article mentioning 'kültür merkezi').
+"""
 
-    Keywords like 'orman yangın' and 'yangın' can overlap at the same text
-    position. We collect all (start, end) match spans, then merge overlapping
-    ones so that each real-world mention is counted only once.
-    """
+
+def _count_category_hits(text: str, category: str) -> int:
+    """Count distinct keyword matches in text, deduplicating overlapping spans."""
     spans: list[tuple[int, int]] = []
     for pat in _COMPILED_PATTERNS.get(category, []):
         for m in pat.finditer(text):
@@ -156,13 +173,12 @@ def _count_category_hits(text: str, category: str) -> int:
     merged: list[tuple[int, int]] = [spans[0]]
     for s, e in spans[1:]:
         prev_s, prev_e = merged[-1]
-        if s <= prev_e:            # overlapping or adjacent
+        if s <= prev_e:
             merged[-1] = (prev_s, max(prev_e, e))
         else:
             merged.append((s, e))
 
     return len(merged)
-
 
 
 def classify_news(title: str, content: str = "") -> str:
@@ -171,11 +187,11 @@ def classify_news(title: str, content: str = "") -> str:
 
     Strategy (two-pass):
       Pass 1 – TITLE ONLY: If any keyword from a category appears in the
-               title, that category is a strong candidate (single hit enough).
-      Pass 2 – CONTENT BODY: If no title match, scan the content. However,
-               require at least 2 distinct keyword hits to reduce false
-               positives from lengthy articles where incidental mentions of
-               generic words (e.g. "yangın", "kaza") cause misclassification.
+               title, that category is classified immediately (1 hit enough).
+      Pass 2 – CONTENT BODY: If no title match, scan the content body.
+               Require ≥CONTENT_HIT_THRESHOLD (3) distinct keyword hits to
+               reduce false positives from lengthy articles mentioning
+               category words incidentally.
 
     Args:
         title:   Article headline.
@@ -199,12 +215,12 @@ def classify_news(title: str, content: str = "") -> str:
         if category in title_matched:
             return category
 
-    # ── Pass 2: content body (lower confidence, need ≥2 hits) ──
+    # ── Pass 2: content body (lower confidence, need ≥3 hits) ──
     if content_lower:
         content_matched: set[str] = set()
         for category in PRIORITY:
             hits = _count_category_hits(content_lower, category)
-            if hits >= 2:
+            if hits >= CONTENT_HIT_THRESHOLD:
                 content_matched.add(category)
 
         for category in PRIORITY:

@@ -136,10 +136,14 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "aziziye": "İzmit",
     "arızlı": "İzmit",
     "arizli": "İzmit",
+    "malta": "İzmit",
     # ── Gebze ───────────────────────────────────────────────────────────────
     "mutlukent": "Gebze",
-    "tubitak": "Gebze",
-    "tübitak": "Gebze",
+    # NOT: "tübitak" kaldırıldı — kurum adı olarak haberlerde çok sık geçer
+    # (örn. "TÜBİTAK raporu", "TÜBİTAK ödülü") ve yanlış Gebze tespitine
+    # neden olur. Sadece kampüs referansı "tübitak mam" bırakıldı.
+    "tübitak mam": "Gebze",
+    "tubitak mam": "Gebze",
     "guzeller osb": "Gebze",
     "güzeller osb": "Gebze",
     "plastikciler osb": "Gebze",
@@ -174,7 +178,7 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "hereke": "Körfez",
     "sirinyali": "Körfez",
     "şirinyalı": "Körfez",
-    "kullar": "Körfez",
+    # NOT: "kullar" Başiskele'ye taşındı (aşağıda)
     "rahmiye": "Körfez",
     "subaşı": "Körfez",
     "subasi": "Körfez",
@@ -203,6 +207,7 @@ NEIGHBORHOOD_TO_DISTRICT: dict[str, str] = {
     "korkuyu": "Başiskele",
     "ovacık": "Başiskele",
     "ovacik": "Başiskele",
+    "kullar": "Başiskele",
     # ── Gölcük ──────────────────────────────────────────────────────────────
     "degirmendere": "Gölcük",
     "değirmendere": "Gölcük",
