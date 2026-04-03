@@ -63,8 +63,8 @@ const fmtDate = (s?: string) => {
 
 /* ─── Shared style tokens ─────────────────────────────────── */
 const inputStyle: React.CSSProperties = {
-  width: '100%', background: '#1e222a', color: 'var(--text-main)',
-  border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10,
+  width: '100%', background: 'var(--bg-panel-light)', color: 'var(--text-main)',
+  border: '1px solid var(--border-heavy)', borderRadius: 10,
   padding: '9px 32px 9px 12px', fontSize: 13,
   fontFamily: 'Inter, system-ui, sans-serif',
   appearance: 'none', outline: 'none', cursor: 'pointer',
@@ -615,13 +615,15 @@ export default function MapPage() {
                       <label key={label} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '9px 11px', borderRadius: 9, cursor: 'pointer',
-                        background: on ? `${color}12` : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${on ? color + '28' : 'var(--border-light)'}`,
+                        background: on ? 'var(--bg-body)' : 'var(--border-light)',
+                        border: `1px solid ${on ? 'var(--border-heavy)' : 'transparent'}`,
+                        borderLeft: `5px solid ${on ? color : 'transparent'}`,
+                        boxShadow: on ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
                         transition: 'all 0.15s',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <Icon size={15} color={on ? color : 'var(--text-muted-dark)'} strokeWidth={2} />
-                          <span style={{ fontSize: 12, fontWeight: 500, color: on ? 'var(--text-main)' : '#4a4e5d' }}>{label}</span>
+                          <Icon size={16} color={on ? color : 'var(--text-muted)'} strokeWidth={2.5} />
+                          <span style={{ fontSize: 13, fontWeight: on ? 700 : 500, color: on ? 'var(--text-main)' : 'var(--text-muted)' }}>{label}</span>
                         </div>
                         <input
                           type="checkbox" checked={on} onChange={() => toggleType(label)}
@@ -639,15 +641,16 @@ export default function MapPage() {
                 disabled={scraping}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  padding: '10px 0', borderRadius: 10, width: '100%',
-                  background: scraping ? 'var(--border-light)' : 'rgba(182,196,255,0.1)',
-                  border: `1px solid ${scraping ? 'var(--border-heavy)' : 'rgba(182,196,255,0.2)'}`,
-                  color: scraping ? 'var(--text-muted-dark)' : 'var(--accent)',
-                  fontSize: 12, fontWeight: 600, cursor: scraping ? 'not-allowed' : 'pointer',
+                  padding: '11px 0', borderRadius: 10, width: '100%',
+                  background: scraping ? 'var(--border-light)' : 'var(--text-main)',
+                  border: 'none',
+                  color: scraping ? 'var(--text-muted-dark)' : 'var(--bg-body)',
+                  fontSize: 13, fontWeight: 700, cursor: scraping ? 'not-allowed' : 'pointer',
+                  boxShadow: scraping ? 'none' : '0 4px 15px rgba(0,0,0,0.1)',
                   transition: 'all 0.15s',
                 }}
               >
-                <RefreshCw size={13} strokeWidth={2.2}
+                <RefreshCw size={15} strokeWidth={2.5}
                   style={{ animation: scraping ? '_sentinel_spin 0.9s linear infinite' : 'none' }} />
                 {scraping ? 'Çekiliyor…' : scrapeMsg ?? 'Veri Çek'}
               </button>
@@ -699,15 +702,17 @@ export default function MapPage() {
                     onClick={() => setSelected(news)}
                     style={{
                       background: selected?._id === news._id
-                        ? `${accent}10`
-                        : 'rgba(255,255,255,0.025)',
-                      border: `1px solid ${selected?._id === news._id ? accent + '25' : 'var(--border-light)'}`,
+                        ? 'var(--bg-body)'
+                        : 'var(--border-light)',
+                      border: `1px solid ${selected?._id === news._id ? 'var(--border-heavy)' : 'transparent'}`,
+                      borderLeft: `4px solid ${accent}`,
                       borderRadius: 10, padding: '11px 12px',
                       cursor: 'pointer', transition: 'all 0.15s',
                       display: 'flex', gap: 10, alignItems: 'flex-start',
+                      boxShadow: selected?._id === news._id ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
                     }}
                     onMouseOver={e => { if (selected?._id !== news._id) e.currentTarget.style.background = 'var(--border-medium)'; }}
-                    onMouseOut={e => { if (selected?._id !== news._id) e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
+                    onMouseOut={e => { if (selected?._id !== news._id) e.currentTarget.style.background = 'var(--border-light)'; }}
                   >
                     {/* Icon bubble */}
                     <div style={{
