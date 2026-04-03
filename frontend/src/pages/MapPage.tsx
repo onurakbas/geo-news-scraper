@@ -18,12 +18,12 @@ type EventType =
   | 'Diğer';
 
 const EVENT_FILTERS: { label: EventType; Icon: React.ElementType; color: string }[] = [
-  { label: 'Trafik Kazası', Icon: Car,         color: '#f59e0b' },
-  { label: 'Yangın',        Icon: Flame,        color: '#ef4444' },
-  { label: 'Elektrik Kesintisi', Icon: Zap,    color: '#b6c4ff' },
-  { label: 'Hırsızlık',    Icon: ShieldAlert,  color: '#a855f7' },
+  { label: 'Trafik Kazası', Icon: Car, color: '#f59e0b' },
+  { label: 'Yangın', Icon: Flame, color: '#ef4444' },
+  { label: 'Elektrik Kesintisi', Icon: Zap, color: '#b6c4ff' },
+  { label: 'Hırsızlık', Icon: ShieldAlert, color: '#a855f7' },
   { label: 'Kültürel Etkinlikler', Icon: Music2, color: '#a43d77' },
-  { label: 'Diğer',        Icon: LayoutGrid,   color: '#22c55e' },
+  { label: 'Diğer', Icon: LayoutGrid, color: '#22c55e' },
 ];
 
 const iconOf = (type: string): React.ElementType => {
@@ -38,7 +38,7 @@ const accentOf = (type: string): string =>
   ({ 'Yangın': '#ef4444', 'Trafik Kazası': '#f59e0b', 'Elektrik Kesintisi': '#b6c4ff', 'Hırsızlık': '#a855f7', 'Kültürel Etkinlikler': '#a43d77' }[type] ?? '#22c55e');
 
 const DISTRICTS = ['Tüm İlçeler', 'İzmit', 'Gebze', 'Derince', 'Körfez', 'Kartepe', 'Gölcük', 'Çayırova', 'Dilovası'];
-const TIME_RANGES = ['Tüm Zamanlar', 'Son 24 Saat', 'Son 3 Gün', 'Son 1 Hafta'];
+const TIME_RANGES = ['Tüm Zamanlar', 'Son 24 Saat', 'Son 3 Gün'];
 
 const parseUTC = (s: string): number => {
   if (!s) return 0;
@@ -136,7 +136,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M18 6L6 18M6 6l12 12"/>
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -163,7 +163,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                   border: '1px solid rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <CalendarDays size={14} color="#5a5e72" strokeWidth={2}/>
+                  <CalendarDays size={14} color="#5a5e72" strokeWidth={2} />
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: '#dfe2eb', fontWeight: 500 }}>{fmtDate(marker.published_at)}</div>
@@ -181,7 +181,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                   border: '1px solid rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <MapPin size={14} color="#5a5e72" strokeWidth={2}/>
+                  <MapPin size={14} color="#5a5e72" strokeWidth={2} />
                 </div>
                 <div>
                   {marker.neighborhood && (
@@ -203,7 +203,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                   border: '1px solid rgba(255,255,255,0.07)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <Newspaper size={14} color="#5a5e72" strokeWidth={2}/>
+                  <Newspaper size={14} color="#5a5e72" strokeWidth={2} />
                 </div>
                 <div style={{ paddingTop: 6 }}>
                   {(marker.sources ?? []).map((src, i) => (
@@ -222,7 +222,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
         <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           {(() => {
             const sources = marker.sources ?? [];
-            const urls    = marker.urls    ?? [];
+            const urls = marker.urls ?? [];
 
             // Her kaynak için URL eşleştir (sıra korunsun)
             const entries: { src: string; url: string }[] = sources.map((src, i) => ({
@@ -252,7 +252,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                 >
                   {entries[0].src}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                    <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </a>
               );
@@ -297,7 +297,7 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
                     >
                       <span style={{ fontSize: 12, color: '#dfe2eb', fontWeight: 600 }}>{src}</span>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                        <path d="M5 12h14M12 5l7 7-7 7" />
                       </svg>
                     </a>
                   ))}
@@ -313,21 +313,21 @@ function DetailPanel({ marker, onClose }: { marker: MapMarker; onClose: () => vo
 
 /* ─── Component ───────────────────────────────────────────── */
 export default function MapPage() {
-  const [allMarkers,  setAllMarkers]  = useState<MapMarker[]>([]);
-  const [markers,     setMarkers]     = useState<MapMarker[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [selected,    setSelected]    = useState<MapMarker | null>(null);
+  const [allMarkers, setAllMarkers] = useState<MapMarker[]>([]);
+  const [markers, setMarkers] = useState<MapMarker[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<MapMarker | null>(null);
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
     new Set(EVENT_FILTERS.map(e => e.label))
   );
-  const [district,      setDistrict]   = useState('Tüm İlçeler');
-  const [timeRange,     setTimeRange]  = useState('Tüm Zamanlar');
-  const [isCustomDate,  setIsCustomDate] = useState(false);
-  const [startDate,     setStartDate]  = useState('');
-  const [endDate,       setEndDate]    = useState('');
-  const [search,        setSearch]     = useState('');
-  const [scraping,      setScraping]   = useState(false);
-  const [scrapeMsg,     setScrapeMsg]  = useState<string | null>(null);
+  const [district, setDistrict] = useState('Tüm İlçeler');
+  const [timeRange, setTimeRange] = useState('Tüm Zamanlar');
+  const [isCustomDate, setIsCustomDate] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [search, setSearch] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeMsg, setScrapeMsg] = useState<string | null>(null);
 
   /* fetch */
   const loadData = useCallback(async () => {
@@ -365,27 +365,41 @@ export default function MapPage() {
   }, [scraping, loadData]);
 
   /* filter */
+  // MapPage.tsx içindeki filter useEffect bloğu
   useEffect(() => {
     let r = allMarkers.filter(m => {
       const t = (m.type ?? 'Diğer') as EventType;
       return activeTypes.has(t);
     });
+
     if (district !== 'Tüm İlçeler') r = r.filter(m => m.district === district);
+
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter(m => m.title?.toLowerCase().includes(q) || m.district?.toLowerCase().includes(q));
     }
+
     const now = Date.now();
     if (isCustomDate) {
-      if (startDate) { const s = new Date(startDate).setHours(0,0,0,0); r = r.filter(m => m.published_at && new Date(m.published_at).getTime() >= s); }
-      if (endDate)   { const e = new Date(endDate).setHours(23,59,59,999); r = r.filter(m => m.published_at && new Date(m.published_at).getTime() <= e); }
+      // Başlangıç tarihi seçiliyse: O günün 00:00'ından büyük olanlar
+      if (startDate) {
+        const s = new Date(startDate).setHours(0, 0, 0, 0);
+        r = r.filter(m => m.published_at && parseUTC(m.published_at) >= s);
+      }
+      // Bitiş tarihi seçiliyse: O günün 23:59'undan küçük olanlar
+      if (endDate) {
+        const e = new Date(endDate).setHours(23, 59, 59, 999);
+        r = r.filter(m => m.published_at && parseUTC(m.published_at) <= e);
+      }
     } else {
       let ms = 0;
       if (timeRange === 'Son 24 Saat') ms = 86400000;
       else if (timeRange === 'Son 3 Gün') ms = 259200000;
-      else if (timeRange === 'Son 1 Hafta') ms = 604800000;
-      if (ms > 0) r = r.filter(m => !m.published_at || (now - parseUTC(m.published_at)) <= ms);
+      // 1 hafta kontrolü buradan da kaldırıldı
+
+      if (ms > 0) r = r.filter(m => m.published_at && (now - parseUTC(m.published_at)) <= ms);
     }
+
     setMarkers(r);
   }, [allMarkers, activeTypes, district, search, timeRange, startDate, endDate, isCustomDate]);
 
@@ -448,8 +462,8 @@ export default function MapPage() {
             border: '1px solid rgba(182,196,255,0.18)',
           }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b6c4ff" strokeWidth="2">
-              <circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 1 0 20M12 2a10 10 0 0 0 0 20M2 12h20"/>
-              <path d="M12 2c2.5 2.5 4 5.8 4 10s-1.5 7.5-4 10M12 2C9.5 4.5 8 7.8 8 12s1.5 7.5 4 10"/>
+              <circle cx="12" cy="12" r="2" /><path d="M12 2a10 10 0 0 1 0 20M12 2a10 10 0 0 0 0 20M2 12h20" />
+              <path d="M12 2c2.5 2.5 4 5.8 4 10s-1.5 7.5-4 10M12 2C9.5 4.5 8 7.8 8 12s1.5 7.5 4 10" />
             </svg>
           </div>
           <span style={{
@@ -466,7 +480,7 @@ export default function MapPage() {
           padding: '8px 16px', border: '1px solid rgba(255,255,255,0.06)',
           width: '34%', minWidth: 220,
         }}>
-          <Search size={14} color="#3d4150" strokeWidth={2.5}/>
+          <Search size={14} color="#3d4150" strokeWidth={2.5} />
           <input
             placeholder="Kocaeli'de ara…"
             value={search}
@@ -478,9 +492,9 @@ export default function MapPage() {
             }}
           />
           {search && (
-            <button onClick={() => setSearch('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#454652', display:'flex' }}>
+            <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#454652', display: 'flex' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6L6 18M6 6l12 12"/>
+                <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
           )}
@@ -501,7 +515,7 @@ export default function MapPage() {
           onMouseOver={e => (e.currentTarget.style.background = 'rgba(182,196,255,0.1)')}
           onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
         >
-          <RefreshCw size={15} strokeWidth={2.2}/>
+          <RefreshCw size={15} strokeWidth={2.2} />
         </button>
       </header>
 
@@ -524,8 +538,8 @@ export default function MapPage() {
               {/* İlçe */}
               <div>
                 <label style={labelStyle}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
-                    <MapPin size={9} strokeWidth={2.5}/> İlçe
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <MapPin size={9} strokeWidth={2.5} /> İlçe
                   </span>
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -533,15 +547,15 @@ export default function MapPage() {
                     {DISTRICTS.map(d => <option key={d}>{d}</option>)}
                   </select>
                   <ChevronDown size={13} strokeWidth={2} color="#3d4150"
-                    style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 </div>
               </div>
 
               {/* Zaman aralığı */}
               <div>
                 <label style={labelStyle}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
-                    <Clock size={9} strokeWidth={2.5}/> Zaman Aralığı
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Clock size={9} strokeWidth={2.5} /> Zaman Aralığı
                   </span>
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -550,12 +564,12 @@ export default function MapPage() {
                     <option>Özel Tarih Seç...</option>
                   </select>
                   <ChevronDown size={13} strokeWidth={2} color="#3d4150"
-                    style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 </div>
                 {isCustomDate && (
                   <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-                    <input type="date" style={{ ...inputStyle, padding: '7px 8px' }} onChange={e => setStartDate(e.target.value)}/>
-                    <input type="date" style={{ ...inputStyle, padding: '7px 8px' }} onChange={e => setEndDate(e.target.value)}/>
+                    <input type="date" style={{ ...inputStyle, padding: '7px 8px' }} onChange={e => setStartDate(e.target.value)} />
+                    <input type="date" style={{ ...inputStyle, padding: '7px 8px' }} onChange={e => setEndDate(e.target.value)} />
                   </div>
                 )}
               </div>
@@ -563,8 +577,8 @@ export default function MapPage() {
               {/* Olay türü */}
               <div>
                 <label style={labelStyle}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
-                    <Filter size={9} strokeWidth={2.5}/> Olay Türü
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Filter size={9} strokeWidth={2.5} /> Olay Türü
                   </span>
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -579,7 +593,7 @@ export default function MapPage() {
                         transition: 'all 0.15s',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <Icon size={15} color={on ? color : '#3d4150'} strokeWidth={2}/>
+                          <Icon size={15} color={on ? color : '#3d4150'} strokeWidth={2} />
                           <span style={{ fontSize: 12, fontWeight: 500, color: on ? '#dfe2eb' : '#4a4e5d' }}>{label}</span>
                         </div>
                         <input
@@ -607,7 +621,7 @@ export default function MapPage() {
                 }}
               >
                 <RefreshCw size={13} strokeWidth={2.2}
-                  style={{ animation: scraping ? '_sentinel_spin 0.9s linear infinite' : 'none' }}/>
+                  style={{ animation: scraping ? '_sentinel_spin 0.9s linear infinite' : 'none' }} />
                 {scraping ? 'Çekiliyor…' : scrapeMsg ?? 'Veri Çek'}
               </button>
             </div>
@@ -627,7 +641,7 @@ export default function MapPage() {
                   <div style={{
                     width: 6, height: 6, borderRadius: '50%',
                     background: '#ef4444', boxShadow: '0 0 7px #ef4444',
-                  }}/>
+                  }} />
                   <span style={{ fontSize: 9, fontWeight: 700, color: '#3d4150', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
                     Son Haberler
                   </span>
@@ -675,7 +689,7 @@ export default function MapPage() {
                       border: `1px solid ${accent}20`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
                     }}>
-                      <Icon size={14} color={accent} strokeWidth={2}/>
+                      <Icon size={14} color={accent} strokeWidth={2} />
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
