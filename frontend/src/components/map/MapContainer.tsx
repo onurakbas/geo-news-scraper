@@ -7,23 +7,7 @@ const KOCAELI_CENTER = { lat: 40.7654, lng: 29.9408 };
 const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
 
 /* ─── Dark map style ──────────────────────────────────────── */
-const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry',             stylers: [{ color: '#10141a' }] },
-  { elementType: 'labels.text.stroke',   stylers: [{ color: '#10141a' }] },
-  { elementType: 'labels.text.fill',     stylers: [{ color: '#454652' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#c6c5d4' }] },
-  { featureType: 'poi',            elementType: 'labels',          stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.park',       elementType: 'geometry',        stylers: [{ color: '#13191f' }] },
-  { featureType: 'road',           elementType: 'geometry',        stylers: [{ color: '#1c2026' }] },
-  { featureType: 'road',           elementType: 'geometry.stroke', stylers: [{ color: '#0a0e14' }] },
-  { featureType: 'road',           elementType: 'labels.text.fill',stylers: [{ color: '#454652' }] },
-  { featureType: 'road.highway',   elementType: 'geometry',        stylers: [{ color: '#242830' }] },
-  { featureType: 'road.highway',   elementType: 'geometry.stroke', stylers: [{ color: '#0a0e14' }] },
-  { featureType: 'road.highway',   elementType: 'labels.text.fill',stylers: [{ color: '#616672' }] },
-  { featureType: 'transit',        elementType: 'geometry',        stylers: [{ color: '#13191f' }] },
-  { featureType: 'water',          elementType: 'geometry',        stylers: [{ color: '#050a10' }] },
-  { featureType: 'water',          elementType: 'labels.text.fill',stylers: [{ color: '#1c2026' }] },
-];
+
 
 /* ─── Marker config per type ──────────────────────────────── */
 type Cfg = { bg: string; border: string; ping: string };
@@ -162,7 +146,6 @@ const MapContainer = ({ markers, onMarkerClick, selectedId }: Props) => {
       center={KOCAELI_CENTER}
       zoom={11}
       options={{
-        styles: DARK_MAP_STYLE,
         disableDefaultUI: true,
         gestureHandling: 'greedy',
         clickableIcons: false,
