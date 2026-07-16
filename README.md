@@ -1,6 +1,5 @@
 # News Radar — Geographic News Tracking System for Kocaeli
 
-> **Software Laboratory 2 · Project 1**
 > A full-stack web application that automatically scrapes five local news websites, classifies articles with NLP, deduplicates near-identical stories via sentence embeddings, extracts and geocodes their locations, and visualizes everything as interactive pins on Google Maps.
 
 ---
@@ -36,9 +35,9 @@
 
 ## About the Project
 
-**News Radar** is a full-stack news tracking system that periodically crawls five local news websites covering the Kocaeli province of Türkiye, automatically classifies every article into one of five mandatory incident categories, detects the district (*ilçe*) and neighborhood (*mahalle*) where each story takes place, and renders each incident as a category-colored pin on an interactive Google Map.
+**News Radar** is a full-stack news tracking system that periodically crawls five local news websites covering the Kocaeli province of Türkiye, automatically classifies every article into one of five predefined incident categories, detects the district (*ilçe*) and neighborhood (*mahalle*) where each story takes place, and renders each incident as a category-colored pin on an interactive Google Map.
 
-The project fulfills the following mandatory course requirements:
+The system is built around the following core capabilities:
 
 - **MongoDB** as the primary database.
 - **Web scraping** of real news websites.
@@ -49,7 +48,7 @@ The project fulfills the following mandatory course requirements:
 ### Key Features
 
 - **Automatic scraping** — 5 news sites are crawled in parallel Scrapy spiders, collecting articles from the last 72 hours. A scrape run is triggered automatically in the background on every server startup, and can also be launched manually from the UI or the API.
-- **Keyword-based classification** — Articles are assigned to 5 mandatory categories using a two-pass, rule-based classifier with prefix matching tailored to Turkish agglutinative morphology.
+- **Keyword-based classification** — Articles are assigned to 5 predefined categories using a two-pass, rule-based classifier with prefix matching tailored to Turkish agglutinative morphology.
 - **Hybrid geographic detection (4 layers)** — Locations are extracted through a layered chain: *"X Mahallesi" context regex → POI (point-of-interest) gazetteer → neighborhood gazetteer → spaCy NER → district alias regex*, then resolved to coordinates via the Google Geocoding API with a 90-day MongoDB cache.
 - **Embedding-based deduplication** — Articles are embedded with a pinned `sentence-transformers` model; pairs with cosine similarity ≥ 0.90 (within a 3-day publication window) are merged into a single group using a Union-Find structure. Sources and URLs of grouped articles are presented together in API responses.
 - **Interactive map** — Category-colored custom pins rendered via Google Maps `OverlayView`; filters for district, time range, and incident type; clicking a marker opens a detail panel with direct links to the original article(s).
@@ -697,12 +696,8 @@ The date filter, duplicate guard, raw-HTML archiving, classification, geocoding,
 
 ## Authors
 
-**Software Laboratory 2 — Project 1**
-
-| Student ID | Name |
-|---|---|
-| 230201090 | Onur Akbaş |
-| 240201120 | Dilay Dikbıyık |
+- Onur Akbaş
+- Dilay Dikbıyık
 
 ---
 
