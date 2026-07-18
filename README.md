@@ -4,6 +4,20 @@
 
 ---
 
+## 📸 Screenshots
+
+### 🗺️ Interactive Map — Dark Theme
+
+![Dark Theme](assets/images/ss_01_map_dark.png)
+
+---
+
+### 🗺️ Interactive Map — Light Theme
+
+![Light Theme](assets/images/ss_02_map_light.png)
+
+---
+
 ## Table of Contents
 
 - [About the Project](#about-the-project)
